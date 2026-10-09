@@ -138,3 +138,30 @@ test('CLI copies a selected fixture into a temporary project and prints its real
   assert.ok(stdout.includes(path.join(fixturePaths.project, '.agents/skills', SKILL_NAME)));
   assert.match(await readFile(path.join(fixturePaths.project, '.agents/skills', SKILL_NAME, 'runtime/package.json'), 'utf8'), /private/);
 });
+
+test('installed provenance requires staged bytes to match HEAD, including ignored and untracked copied files',async t=>{
+  const f=await fixture(t);
+  const git=async args=>promisify(execFile)('git',['-C',f.source,...args]);
+  await git(['init']);
+  await writeFile(path.join(f.source,'.gitignore'),'node_modules/\nignored.txt\n');
+  await git(['add','.']);
+  await git(['-c','user.name=Fixture','-c','user.email=fixture@example.com','commit','-m','Fixture']);
+  await git(['remote','add','origin','https://github.com/russpage/signalcheck.git']);
+  const sha=(await git(['rev-parse','HEAD'])).stdout.trim();
+  const receipt=async()=>{
+    const result=await installSkill({...f,platform:'codex',force:true});
+    return JSON.parse(await readFile(path.join(result.installations[0].destination,'.signalcheck-install.json'),'utf8'));
+  };
+  assert.equal((await receipt()).installedCommit,sha);
+  await mkdir(path.join(f.source,'node_modules'));await writeFile(path.join(f.source,'node_modules/cache'),'omitted');
+  assert.equal((await receipt()).installedCommit,sha,'Omitted generated files do not alter the copy');
+  const code=path.join(f.source,'runtime/bin/run.mjs');const original=await readFile(code,'utf8');
+  await writeFile(code,`${original}\nexport const localChange=true;`);
+  assert.equal((await receipt()).installedCommit,null,'Modified tracked bytes must not claim HEAD');
+  await writeFile(code,original);
+  await writeFile(path.join(f.source,'extra.txt'),'untracked');
+  assert.equal((await receipt()).installedCommit,null,'Untracked copied files must not claim HEAD');
+  await rm(path.join(f.source,'extra.txt'));
+  await writeFile(path.join(f.source,'ignored.txt'),'ignored but copied');
+  assert.equal((await receipt()).installedCommit,null,'Ignored copied files must not claim HEAD');
+});

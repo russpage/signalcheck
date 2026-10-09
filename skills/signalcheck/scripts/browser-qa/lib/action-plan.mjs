@@ -21,6 +21,7 @@ export function scopeOf(entry, report) {
 
 const scopeKey = scope => JSON.stringify(scope);
 const fingerprint = finding => finding.fingerprint ?? findingKey({...finding,evidence:Array.isArray(finding.evidence)?finding.evidence:finding.evidence?[finding.evidence]:[]});
+const scopedFindingKey = (finding, report) => JSON.stringify({ fingerprint: fingerprint(finding), scope: scopeOf(finding, report) });
 const actionable = finding => finding.severity !== 'info' || finding.code === 'EVENT_EXPECTATIONS_UNCONFIGURED';
 
 function requirements(finding) {
@@ -63,7 +64,9 @@ export function buildActionPlan(report, { mode = 'investigate', capabilities = [
       status: old && old.status !== 'verified-browser-scope' ? old.status : 'needs-investigation',
       baseline: old?.baseline ?? { runId: report.runId, startedAt: report.startedAt, scope, regressionScopes,
         captureAdequate: report.executionComplete === true && report.status !== 'failed' && list(report.visits).some(v => scopeKey(scopeOf(v, report)) === scopeKey(scope) && v.status === 'completed' && !v.networkCaptureTruncated && v.dataLayerTimelineComplete !== false && !list(v.findings).some(f => incompleteCapture.test(String(f.code)))),
-        findingFingerprints: list(report.findings).filter(actionable).map(fingerprint) },
+        findingScopeKeys: list(report.findings).filter(actionable)
+          .filter(f => regressionScopes.some(scope => scopeKey(scopeOf(f, report)) === scopeKey(scope)))
+          .map(f => scopedFindingKey(f, report)) },
       suggestion: finding.suggestion ?? finding.suggestedFix ?? list(finding.recommendations).join(' '),
       expected: finding.expected, observed: finding.actual, evidence: finding.evidence ?? [],
       requiredCapabilities: required, availableCapabilities: available,
@@ -140,7 +143,8 @@ export function verifyAction(plan, id, report) {
   const related = list(report.findings).filter(f => scopes.some(scope => scopeKey(scopeOf(f, report)) === scopeKey(scope)));
   const remaining = related.some(f => fingerprint(f) === action.findingFingerprint ||
     (f.code === action.code && scopeKey(scopeOf(f, report)) === scopeKey(action.baseline.scope)));
-  const regressions = related.filter(actionable).filter(f => !action.baseline.findingFingerprints.includes(fingerprint(f)));
+  if (!Array.isArray(action.baseline.findingScopeKeys)) blockers.push('The baseline lacks scoped regression evidence; collect a reviewed complete baseline.');
+  const regressions = related.filter(actionable).filter(f => !list(action.baseline.findingScopeKeys).includes(scopedFindingKey(f, report)));
   if (remaining) blockers.push('The original failure is still observed.');
   if (regressions.length) blockers.push('New findings appeared in the regression scopes.');
   const verified = !blockers.length;
