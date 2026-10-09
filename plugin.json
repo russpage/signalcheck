@@ -1,6 +1,6 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "signalcheck",
-  "version": "0.2.0",
-  "description": "Check website forms, analytics events and consent behavior in a real browser, with evidence and suggested fixes."
+  "version": "0.3.0",
+  "description": "Check website forms and tracking in a real browser. Give your agent a fix queue, tool guidance and retests against the original checks."
 }

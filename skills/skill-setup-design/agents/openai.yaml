@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill setup design"
+  short_description: "Co-create setup and deliver a useful first result"
+  default_prompt: "Use $skill-setup-design when creating or updating this skill to guide setup, meaningful user decisions and the first useful result."

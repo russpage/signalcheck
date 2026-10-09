@@ -1,0 +1,26 @@
+name: Share setup feedback
+description: Tell us where setup helped or got in your way.
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Which customer action did you want to check?
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: Where did you get stuck or have to guess?
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: What should setup have done for you?
+  - type: input
+    id: host
+    attributes:
+      label: Agent and SignalCheck version
+  - type: markdown
+    attributes:
+      value: "Please remove private site/account information before posting."

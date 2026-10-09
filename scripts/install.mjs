@@ -4,7 +4,9 @@ import { lstat, mkdir, readdir, readFile, writeFile, rename, rm, open } from 'no
 import { homedir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 
 export const SKILL_NAME = 'signalcheck';
 export const PLATFORM_PATHS = Object.freeze({
@@ -89,6 +91,33 @@ async function stageSkill(source, entries, stage) {
   }
 }
 
+// Compare the actual staged bytes and file modes with the recorded commit.
+// Ignored/untracked copied files count as edits; omitted caches do not.
+async function verifiedSourceCommit(source, entries, stage) {
+  try {
+    const git = async args => (await promisify(execFile)('git', ['-C', source, ...args])).stdout;
+    const sha = (await git(['rev-parse', 'HEAD'])).trim();
+    const origin = await git(['remote', 'get-url', 'origin']);
+    if (!/^[a-f0-9]{40}$/.test(sha) || !/^(?:https:\/\/github\.com\/|git@github\.com:)russpage\/signalcheck(?:\.git)?\s*$/.test(origin)) return null;
+    const tree = (await git(['ls-tree', '-r', '-z', sha, '--', '.'])).split('\0').filter(Boolean).map(record => {
+      const tab = record.indexOf('\t');
+      const [mode, type, blob] = record.slice(0, tab).split(' ');
+      return { mode, type, blob, relative: record.slice(tab + 1) };
+    }).filter(entry => !entry.relative.split('/').some(segment => OMITTED.has(segment)));
+    const files = entries.filter(entry => !entry.directory);
+    if (tree.length !== files.length) return null;
+    const tracked = new Map(tree.map(entry => [entry.relative, entry]));
+    for (const entry of files) {
+      const committed = tracked.get(entry.relative.split(path.sep).join('/'));
+      if (!committed || committed.type !== 'blob' || committed.mode !== (entry.mode & 0o111 ? '100755' : '100644')) return null;
+      const bytes = await readFile(path.join(stage, entry.relative));
+      const blob = createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+      if (blob !== committed.blob) return null;
+    }
+    return sha;
+  } catch { return null; /* Archives and noncanonical sources have no verified commit provenance. */ }
+}
+
 export async function installSkill(options = {}) {
   const source = path.resolve(options.source ?? DEFAULT_SOURCE);
   const plan = destinationPlan(options);
@@ -127,6 +156,11 @@ export async function installSkill(options = {}) {
       const change = { ...item, stage: path.join(parent, `.${SKILL_NAME}-stage-${token}`), backup: path.join(parent, `.${SKILL_NAME}-backup-${token}`), committed: false, backedUp: false };
       changes.push(change);
       await stageSkill(source, entries, change.stage);
+      const installedCommit = await verifiedSourceCommit(source, entries, change.stage);
+      await writeFile(path.join(change.stage, '.signalcheck-install.json'), JSON.stringify({
+        schemaVersion: 1, repository: 'russpage/signalcheck', branch: 'main', installedCommit,
+        installedAt: new Date().toISOString(), platform: item.platform,
+      }, null, 2), { mode: 0o600 });
     }
     for (const change of changes) {
       await assertNoSymlinkComponents(change.destination);

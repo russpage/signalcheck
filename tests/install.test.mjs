@@ -27,6 +27,10 @@ test('all project platforms receive complete, independent runtime copies', async
   const fixturePaths = await fixture(t);
   const result = await installSkill({ ...fixturePaths, platform: 'all' });
   assert.equal(result.installations.length, 4);
+  const receipt=JSON.parse(await readFile(path.join(result.installations[0].destination,'.signalcheck-install.json'),'utf8'));
+  assert.equal(receipt.repository,'russpage/signalcheck');
+  assert.equal(receipt.branch,'main');
+  assert.equal(receipt.installedCommit,null);
   assert.equal(result.files, 3);
   for (const item of result.installations) {
     assert.match(await readFile(path.join(item.destination, 'SKILL.md'), 'utf8'), /name: signalcheck/);
@@ -62,7 +66,7 @@ test('existing installation is preserved unless force is explicit', async t => {
   assert.equal(await readFile(marker, 'utf8'), 'keep me');
   await installSkill({ ...options, force: true });
   await assert.rejects(access(marker), { code: 'ENOENT' });
-  assert.deepEqual((await readdir(path.dirname(marker))).sort(), ['SKILL.md', 'runtime']);
+  assert.deepEqual((await readdir(path.dirname(marker))).sort(), ['.signalcheck-install.json', 'SKILL.md', 'runtime']);
   assert.deepEqual(await readdir(path.dirname(first.installations[0].destination)), [SKILL_NAME]);
 });
 
@@ -133,4 +137,31 @@ test('CLI copies a selected fixture into a temporary project and prints its real
   assert.match(stdout, /Installed codex:/);
   assert.ok(stdout.includes(path.join(fixturePaths.project, '.agents/skills', SKILL_NAME)));
   assert.match(await readFile(path.join(fixturePaths.project, '.agents/skills', SKILL_NAME, 'runtime/package.json'), 'utf8'), /private/);
+});
+
+test('installed provenance requires staged bytes to match HEAD, including ignored and untracked copied files',async t=>{
+  const f=await fixture(t);
+  const git=async args=>promisify(execFile)('git',['-C',f.source,...args]);
+  await git(['init']);
+  await writeFile(path.join(f.source,'.gitignore'),'node_modules/\nignored.txt\n');
+  await git(['add','.']);
+  await git(['-c','user.name=Fixture','-c','user.email=fixture@example.com','commit','-m','Fixture']);
+  await git(['remote','add','origin','https://github.com/russpage/signalcheck.git']);
+  const sha=(await git(['rev-parse','HEAD'])).stdout.trim();
+  const receipt=async()=>{
+    const result=await installSkill({...f,platform:'codex',force:true});
+    return JSON.parse(await readFile(path.join(result.installations[0].destination,'.signalcheck-install.json'),'utf8'));
+  };
+  assert.equal((await receipt()).installedCommit,sha);
+  await mkdir(path.join(f.source,'node_modules'));await writeFile(path.join(f.source,'node_modules/cache'),'omitted');
+  assert.equal((await receipt()).installedCommit,sha,'Omitted generated files do not alter the copy');
+  const code=path.join(f.source,'runtime/bin/run.mjs');const original=await readFile(code,'utf8');
+  await writeFile(code,`${original}\nexport const localChange=true;`);
+  assert.equal((await receipt()).installedCommit,null,'Modified tracked bytes must not claim HEAD');
+  await writeFile(code,original);
+  await writeFile(path.join(f.source,'extra.txt'),'untracked');
+  assert.equal((await receipt()).installedCommit,null,'Untracked copied files must not claim HEAD');
+  await rm(path.join(f.source,'extra.txt'));
+  await writeFile(path.join(f.source,'ignored.txt'),'ignored but copied');
+  assert.equal((await receipt()).installedCommit,null,'Ignored copied files must not claim HEAD');
 });

@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import { buildActionPlan, recordAction, verifyAction } from '../lib/action-plan.mjs';
 import { spawn } from 'node:child_process';
 
 const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'website-qa-browser-'));
@@ -15,6 +16,7 @@ const embedded = http.createServer((_request, response) => {
 const listen = server => new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 await listen(embedded);
 const embedUrl = `http://127.0.0.1:${embedded.address().port}`;
+let repaired = false;
 const server = http.createServer((request, response) => {
   if (request.url.startsWith('/g/collect')) { response.writeHead(204); response.end(); return; }
   if (request.url.startsWith('/api/leads')) { receivedLeads++; response.writeHead(200); response.end('accepted'); return; }
@@ -25,7 +27,7 @@ const server = http.createServer((request, response) => {
     <form id="validating" action="/api/leads" method="POST"><label for="email">Email</label><input id="email" type="email" required><button type="submit">Send</button></form>
     <form id="bypassed" novalidate><input type="email" required><button type="submit">Bypass native</button></form>
     <form id="button-bypassed"><input type="email" required><button type="submit" formnovalidate>Bypass button</button></form>
-    <form id="broken" action="/api/leads" method="POST" novalidate><input id="broken-email" type="email" required><button type="submit">Send broken</button></form>
+    <form id="broken" action="/api/leads" method="POST" ${repaired ? '' : 'novalidate'}><input id="broken-email" type="email" required><button type="submit">Send broken</button></form>
     <script>
       function emit(event){return fetch('/g/collect?v=2&tid=G-FIXTURE&en='+event+'&cid=private-client');}
       emit('page_view');
@@ -73,7 +75,26 @@ try {
   for (const id of ['bypass-invalid','button-bypass-invalid']) { const visit=report.visits.find(v=>v.journeyId===id);assert.equal(visit.submission.verified,false);assert.equal(visit.submission.nativeValidationEnabled,false);assert.equal(visit.submission.blockedWrites,0);assert.ok(visit.findings.some(f=>f.code==='FORM_INVALID_INPUT_UNVERIFIED')); }
   assert.doesNotMatch(JSON.stringify(report),/private@example.com|private-person|private-client|private-secret|8015551234/);
   assert.doesNotMatch(processResult.output,/private@example.com|private-person|private-client|private-secret|8015551234/);
-  console.log('Browser fixture passed: SPA events, iframe forms, native invalid validation, write interception, unwanted conversion and redaction.');
+  let plan=buildActionPlan(report,{mode:'prepare-fixes'});
+  const target=plan.actions.find(a=>a.code==='unexpected_event_count' && a.scope.journeyId==='broken-invalid');
+  assert.ok(target,'The unwanted conversion must become an action');
+  plan=recordAction(plan,target.id,{stage:'investigated',evidenceRef:'fixture:source',cause:'Native validation bypassed',causeConfidence:'high'});
+  plan=recordAction(plan,target.id,{stage:'prepared',evidenceRef:'fixture:patch',changeRef:'fixture:remove-novalidate',rollback:'Restore fixture bypass'});
+  repaired=true;
+  plan=recordAction(plan,target.id,{stage:'applied',evidenceRef:'fixture:changed-source',authorized:true,authorizationRef:'fixture:local-test'});
+  const rerun=await new Promise((resolve,reject)=>{
+    const child=spawn(process.execPath,['bin/run.mjs','--config',path.join(directory,'config.json'),'--output',path.join(directory,'retest'),'--allow-invalid'],{cwd:path.resolve(import.meta.dirname,'..'),stdio:['ignore','pipe','pipe']});
+    let output='';child.stdout.on('data',c=>output+=c);child.stderr.on('data',c=>output+=c);
+    const timer=setTimeout(()=>{child.kill('SIGKILL');reject(new Error('Retest timed out'));},90000);
+    child.on('error',reject);child.on('exit',code=>{clearTimeout(timer);resolve({code,output});});
+  });
+  const after=JSON.parse(await fs.readFile(path.join(directory,'retest/report.json'),'utf8'));
+  assert.equal(after.executionComplete,true,rerun.output);
+  const result=verifyAction(plan,target.id,after).actions.find(a=>a.id===target.id);
+  assert.equal(result.status,'verified-browser-scope',JSON.stringify(result.verificationResult));
+  assert.equal(result.verificationResult.downstreamReceipt,'untested');
+  assert.equal(receivedLeads,0,'Repair verification must not deliver synthetic leads');
+  console.log('Browser fixture passed: 10 visits, SPA events, iframe forms, invalid validation, write interception, unwanted conversion, redaction and verified repair.');
 } finally {
   await Promise.all([new Promise(resolve=>server.close(resolve)),new Promise(resolve=>embedded.close(resolve))]);
   await fs.rm(directory,{recursive:true,force:true});
