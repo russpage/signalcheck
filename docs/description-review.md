@@ -55,3 +55,5 @@ Adversarial editorial review: reading “retest the fix” as universal repair s
 ## Continuing requirement
 
 Run PLF again on each description revision, including changed surrounding support; do not carry these judgments forward automatically. Preserve canonical test order and statuses. If a future governing positioning claim asserts a competitive difference, research credible alternatives before approving it.
+
+Validation completed: 11 installer checks and 80 diagnostic/action/update checks passed locally and in GitHub CI. The 10-visit real Chromium fixture detected an unwanted conversion, applied a local validation repair and verified the original browser contract with downstream receipt still untested. CI: https://github.com/russpage/signalcheck/actions/runs/37966235834

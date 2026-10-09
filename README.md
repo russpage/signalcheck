@@ -115,3 +115,5 @@ Use nonsensitive contract, journey and action IDs. Human-readable reports and th
 - Follow the host's browser, execution and authorization rules. CAPTCHA, blocked runtimes and missing backend access are reported as gaps.
 
 See [architecture](docs/architecture.md) and the skill's linked contract/check/report references. MIT licensed.
+
+For skill authors, `skills/skill-setup-design/` contains reusable guidance for meaningful user decisions, a useful first result, progressive setup, updates and feedback. SignalCheck’s installer installs only SignalCheck; this additional skill is a separate source package.
