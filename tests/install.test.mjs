@@ -27,6 +27,10 @@ test('all project platforms receive complete, independent runtime copies', async
   const fixturePaths = await fixture(t);
   const result = await installSkill({ ...fixturePaths, platform: 'all' });
   assert.equal(result.installations.length, 4);
+  const receipt=JSON.parse(await readFile(path.join(result.installations[0].destination,'.signalcheck-install.json'),'utf8'));
+  assert.equal(receipt.repository,'russpage/signalcheck');
+  assert.equal(receipt.branch,'main');
+  assert.equal(receipt.installedCommit,null);
   assert.equal(result.files, 3);
   for (const item of result.installations) {
     assert.match(await readFile(path.join(item.destination, 'SKILL.md'), 'utf8'), /name: signalcheck/);
@@ -62,7 +66,7 @@ test('existing installation is preserved unless force is explicit', async t => {
   assert.equal(await readFile(marker, 'utf8'), 'keep me');
   await installSkill({ ...options, force: true });
   await assert.rejects(access(marker), { code: 'ENOENT' });
-  assert.deepEqual((await readdir(path.dirname(marker))).sort(), ['SKILL.md', 'runtime']);
+  assert.deepEqual((await readdir(path.dirname(marker))).sort(), ['.signalcheck-install.json', 'SKILL.md', 'runtime']);
   assert.deepEqual(await readdir(path.dirname(first.installations[0].destination)), [SKILL_NAME]);
 });
 

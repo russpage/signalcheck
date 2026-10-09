@@ -1,10 +1,12 @@
 # SignalCheck
 
-Check your forms. See which events fire.
+Check the form. Investigate the failure. Retest the fix.
 
-SignalCheck is an open source skill and browser runner for checking website forms, analytics events, consent behavior and key customer actions. Install it in Claude Code, GitHub Copilot, Gemini CLI or OpenAI Codex, then configure the pages, forms and events you want to test.
+SignalCheck is an open source skill and browser runner for checking website forms, analytics events, consent behavior and key customer actions. Install it in Claude Code, GitHub Copilot, Gemini CLI or OpenAI Codex. Start with the customer action you care about; your agent discovers the implementation and helps you define what should happen.
 
-For configured checks, SignalCheck compares the events captured in the browser with your measurement plan. It reports missing events, separates confirmed repeat emissions from suspected duplicates, and gives your AI agent evidence to suggest fixes. Connect a scheduler to repeat the checks daily and track changes.
+Each browser report includes a fix queue: the observed problem, evidence, source access needed, suggested investigation and retest criteria. Your agent can use its connected tools to investigate and prepare authorized code or configuration changes. The included verifier checks an applied repair against the original browser contract and recorded regression scopes; changed expectations, omitted checks and new failures block verification.
+
+SignalCheck supplies the workflow and deterministic browser checks. Your host supplies tool access, credentials, execution, scheduling and any publishing authority. This package does not run an autonomous repair service or ship authenticated GTM/Shopify/CRM connectors. Browser verification does not prove downstream receipt.
 
 Created by **Russ Page**. https://github.com/russpage
 
@@ -54,6 +56,33 @@ node bin/report.mjs /absolute/path/qa/current/report.json
 ```
 
 On Linux CI use `npx playwright install --with-deps chromium` when required. `--help` shows the supported flags. The default run does not fill or submit forms. Page loads can generate genuine analytics traffic, so use a test environment or documented synthetic exclusions. Invalid-input checks require `--allow-invalid`; successful submissions require `--allow-submit` plus QA routing and outcome contracts. Start from `config/contracts.example.json` to configure those disabled journey templates. Purchases and destructive transactions are not executed.
+
+## Turn a finding into a fix
+
+Ask your agent:
+
+> Use SignalCheck on my most important customer journey. Show what you discover, help me define the intended result, and run the browser. Use the tools I have connected to trace failures and prepare reviewable fixes. Retest applied changes against the original checks. Keep missing access and untested delivery stages explicit.
+
+The report generator writes `action-plan.json` and `action-plan.md` alongside the report. For ongoing work, keep a separate persistent ledger:
+
+```sh
+npm run actions -- plan /absolute/path/qa/current/report.json --output /absolute/path/qa/actions.json --mode prepare-fixes
+npm run actions -- record /absolute/path/qa/actions.json --id sc-ACTION --record /absolute/path/qa/change-record.json
+npm run actions -- verify /absolute/path/qa/actions.json --id sc-ACTION --report /absolute/path/qa/retest/report.json
+```
+
+Use `--capabilities PATH` with a host-discovered, read-verified tool inventory and `--previous PATH` to preserve ongoing actions. `investigate` collects/traces; `prepare-fixes` prepares changes; `maintain` follows an explicitly authorized operating policy. Mode selection does not grant publishing permission. The CLI records evidence and verifies reports; the host agent performs actual tool operations. See the installed skill's [agent workflow](skills/signalcheck/references/agent-workflow.md) and [guided setup](skills/signalcheck/references/onboarding.md).
+
+## Updates and feedback
+
+`npm run updates` checks public `main` once and returns a pinned revision and comparison link. Inside an installed skill, run `node scripts/browser-qa/bin/updates.mjs` from the skill directory; its installation receipt identifies the installed commit when available. A repository checkout without an installation receipt reports `baseline-unknown`; supply `--receipt PATH` for a known installation. Checking never updates files or sends notifications.
+
+Your agent can offer an opt-in cadence/channel, summarize relevant changes and ask whether to integrate the pinned revision. It must preserve profiles, evidence and local edits. A separate host scheduler and notification route are required for recurring alerts. See [updates and feedback](skills/signalcheck/references/updates-and-feedback.md).
+
+Report a problem, request an improvement or share setup feedback:
+https://github.com/russpage/signalcheck/issues/new/choose
+
+Public issue forms are supplied. Your agent can draft feedback; it must have authorization before submitting it. Remove private evidence before sharing.
 
 ## Checks
 

@@ -5,6 +5,8 @@ import { homedir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 
 export const SKILL_NAME = 'signalcheck';
 export const PLATFORM_PATHS = Object.freeze({
@@ -127,6 +129,16 @@ export async function installSkill(options = {}) {
       const change = { ...item, stage: path.join(parent, `.${SKILL_NAME}-stage-${token}`), backup: path.join(parent, `.${SKILL_NAME}-backup-${token}`), committed: false, backedUp: false };
       changes.push(change);
       await stageSkill(source, entries, change.stage);
+      let installedCommit = null;
+      try {
+        const { stdout } = await promisify(execFile)('git', ['-C', source, 'rev-parse', 'HEAD']);
+        const { stdout: origin } = await promisify(execFile)('git', ['-C', source, 'remote', 'get-url', 'origin']);
+        if (/^[a-f0-9]{40}$/.test(stdout.trim()) && /^(?:https:\/\/github\.com\/|git@github\.com:)russpage\/signalcheck(?:\.git)?\s*$/.test(origin)) installedCommit = stdout.trim();
+      } catch { /* Archive installs have no commit provenance. */ }
+      await writeFile(path.join(change.stage, '.signalcheck-install.json'), JSON.stringify({
+        schemaVersion: 1, repository: 'russpage/signalcheck', branch: 'main', installedCommit,
+        installedAt: new Date().toISOString(), platform: item.platform,
+      }, null, 2), { mode: 0o600 });
     }
     for (const change of changes) {
       await assertNoSymlinkComponents(change.destination);

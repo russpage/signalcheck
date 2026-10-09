@@ -1,0 +1,28 @@
+name: Report a problem
+description: Describe a failed check, incorrect finding or runner problem.
+body:
+  - type: markdown
+    attributes:
+      value: "This is public. Remove private URLs, identities, tokens, raw payloads and customer data."
+  - type: textarea
+    id: goal
+    attributes:
+      label: What were you trying to check?
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected behavior and what actually happened
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce with a sanitized example
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: SignalCheck version or commit and agent/runtime

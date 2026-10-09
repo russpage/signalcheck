@@ -13,7 +13,8 @@ The package separates portable instructions from executable browser tests. An as
 | Platform knowledge | Explain Shopify pixel sandboxes, SPAs, external forms and provider constraints | Guidance, not a claim that platform-specific backend connectors are installed |
 | Optional receipt observers | Correlate application, CRM, queue, tagging-server and vendor processing records | Extension point; no backend connectors shipped |
 | Deterministic analyzer | Event expectations, unavailable forms, errors, duplicate candidates and comparable-run changes | Contract and evidence determine a result; AI does not rewrite facts |
-| Assistant review | Prioritize impact, distinguish observed failure from suspected cause, propose fixes/next tests | Review layer; no LLM credentials needed for deterministic scans |
+| Host agent and fix ledger | Discover scoped tools, trace causes, prepare authorized changes and record applied work | Host executes tools; package supplies portable instructions and a private action ledger |
+| Verification engine | Compare a fresh post-change browser report with original contracts and recorded regression scopes | Browser-scope verification; does not establish independent deployment provenance or downstream receipt |
 | Scheduler | Daily/periodic execution, retention, last-run artifact and notifications | External service, such as GitHub Actions; host-specific assistant scheduling is optional |
 
 ## Browser-first workflow

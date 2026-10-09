@@ -1,18 +1,22 @@
 {
   "name": "signalcheck",
-  "version": "0.2.0",
-  "description": "Check website forms, analytics events and consent behavior in a real browser, with evidence and suggested fixes.",
+  "version": "0.3.0",
+  "description": "Check website forms and tracking in a real browser. Give your agent a fix queue, tool guidance and retests against the original checks.",
   "author": "Russ Page (https://github.com/russpage)",
   "license": "MIT",
   "private": true,
   "type": "module",
-  "engines": {"node": ">=22"},
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "install:skill": "node scripts/install.mjs",
     "test": "node --test tests/*.test.mjs",
     "test:runner": "npm --prefix skills/signalcheck/scripts/browser-qa test",
     "setup:runner": "npm --prefix skills/signalcheck/scripts/browser-qa ci --ignore-scripts --no-audit --no-fund",
     "scan": "node skills/signalcheck/scripts/browser-qa/bin/run.mjs",
-    "report": "node skills/signalcheck/scripts/browser-qa/bin/report.mjs"
+    "report": "node skills/signalcheck/scripts/browser-qa/bin/report.mjs",
+    "actions": "node skills/signalcheck/scripts/browser-qa/bin/actions.mjs",
+    "updates": "node skills/signalcheck/scripts/browser-qa/bin/updates.mjs"
   }
 }

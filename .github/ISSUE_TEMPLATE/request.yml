@@ -1,0 +1,22 @@
+name: Request an improvement
+description: Explain a task SignalCheck should help you complete.
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: What are you trying to accomplish?
+    validations:
+      required: true
+  - type: textarea
+    id: obstacle
+    attributes:
+      label: What gets in your way today?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What would a useful result look like?
+  - type: markdown
+    attributes:
+      value: "Keep examples public-safe. A request does not imply an implementation commitment."
