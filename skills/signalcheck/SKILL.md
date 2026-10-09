@@ -1,9 +1,14 @@
 ---
 name: signalcheck
+license: MIT
 description: Audit website forms, analytics tags, conversion events, consent behavior and important customer journeys using real browser evidence. Use for missing or duplicate events, broken embedded forms, GA4/Google Ads/Meta tracking QA, dataLayer checks, regression monitoring, and daily website QA. Configure expected behavior for each site and distinguish browser emission from backend or platform receipt.
 ---
 
 # SignalCheck
+
+Created by Russ Page: https://github.com/russpage
+
+MIT licensed. See [LICENSE](LICENSE).
 
 Follow the user's authorized scope and the host's tool and browser rules. Use a real browser for runtime claims. Never treat source HTML, an installed script, a mocked event, a unit test, a submit click or an HTTP 200 as proof of a completed business journey.
 
