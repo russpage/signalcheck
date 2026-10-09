@@ -1,0 +1,47 @@
+{
+  "$schema": "./schema.json",
+  "site": "replace-with-your-domain.example",
+  "allowedOrigins": ["https://replace-with-your-domain.example"],
+  "pages": [
+    {
+      "url": "https://replace-with-your-domain.example/contact",
+      "label": "Contact",
+      "expectedForms": [{"id": "contact", "selector": "form#contact", "requiredFields": ["input[type=email]"], "requireLabels": true}],
+      "assertions": [{"selector": "button[type=submit]", "visible": true, "enabled": true, "accessibleName": "Send"}],
+      "expectedEvents": [{"vendor": "ga4", "destinationId": "G-REPLACE", "eventName": "generate_lead", "count": 0}],
+      "steps": [{"id": "open-contact", "type": "click", "selector": "button[data-open-contact]", "nonDestructive": true, "settleMs": 1000}]
+    }
+  ],
+  "devices": ["desktop", "mobile"],
+  "consentStates": ["accepted", "declined"],
+  "consent": {"acceptSelector": "#accept-cookies", "rejectSelector": "#reject-cookies"},
+  "expectedPageviews": [{"vendor": "ga4", "destinationId": "G-REPLACE", "eventName": "page_view", "count": 1, "consentStates": ["accepted"]}],
+  "knownDestinations": {"ga4": ["G-REPLACE"]},
+  "journeys": [
+    {
+      "id": "contact-invalid",
+      "kind": "invalid-validation",
+      "url": "https://replace-with-your-domain.example/contact",
+      "enabled": false,
+      "formSelector": "form#contact",
+      "fields": [{"selector": "input[type=email]", "value": ""}],
+      "submitSelector": "button[type=submit]",
+      "validationSelector": ".form-error",
+      "expectedEvents": [{"vendor": "ga4", "destinationId": "G-REPLACE", "eventName": "generate_lead", "count": 0}],
+      "blockedReason": "Review selectors and invalid-input expectations before enabling."
+    },
+    {
+      "id": "contact-submit",
+      "kind": "submission",
+      "url": "https://replace-with-your-domain.example/contact",
+      "enabled": false,
+      "syntheticRoutingConfirmed": false,
+      "formSelector": "form#contact",
+      "fields": [{"selector": "input[type=email]", "valueEnv": "WEBSITE_QA_EMAIL"}],
+      "submitSelector": "button[type=submit]",
+      "successSelector": ".form-success",
+      "expectedEvents": [{"vendor": "ga4", "destinationId": "G-REPLACE", "eventName": "generate_lead", "count": 1}],
+      "blockedReason": "Configure a designated QA identity, backend exclusions and confirmed synthetic routing first."
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "./schema.json",
+  "site": "example.com",
+  "allowedOrigins": ["https://example.com"],
+  "pages": [{"url": "https://example.com", "label": "Home"}],
+  "devices": ["desktop"],
+  "consentStates": ["unset"],
+  "maxVisits": 200,
+  "settleMs": 4000,
+  "navigationTimeoutMs": 30000,
+  "screenshotDevices": ["desktop"],
+  "knownDestinations": {},
+  "expectedPageviews": [],
+  "expectedPageEvents": [],
+  "collectorHosts": {},
+  "privacySelectors": [],
+  "syntheticRoutingConfirmed": false,
+  "journeys": []
+}

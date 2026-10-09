@@ -1,0 +1,43 @@
+name: SignalCheck package CI
+
+on:
+  push:
+    paths:
+      - '**'
+  pull_request:
+    paths:
+      - '**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test native-path installer
+        run: npm test
+      - name: Verify actual package installation
+        run: |
+          node scripts/install.mjs --platform all --project "$RUNNER_TEMP/signalcheck-installed"
+          test -f "$RUNNER_TEMP/signalcheck-installed/.agents/skills/signalcheck/scripts/browser-qa/bin/run.mjs"
+      - name: Install browser runtime
+        run: |
+          cd skills/signalcheck/scripts/browser-qa
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Test diagnostic rules
+        run: npm run test:runner
+      - name: Test real Chromium on local fixtures
+        run: |
+          cd skills/signalcheck/scripts/browser-qa
+          npm run test:browser

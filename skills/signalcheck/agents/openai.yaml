@@ -1,0 +1,4 @@
+interface:
+  display_name: "SignalCheck"
+  short_description: "Test forms, events and journeys with browser evidence"
+  default_prompt: "Use $signalcheck to audit this website in a real browser and report verified issues and fixes."
