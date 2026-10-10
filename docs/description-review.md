@@ -53,6 +53,6 @@ Adversarial editorial review: “agent access” cannot be read honestly as auth
 
 ## Validation record
 
-Local: 12 installer checks and 93 runner checks passed; installed the complete updated package on all four supported native paths and validated skill frontmatter. Local Chromium download was unavailable; real-browser fixtures must pass in GitHub CI before main integration. Record the final CI URL and results after they are observed.
+Local: 12 installer checks and 93 runner checks passed; installed the complete updated package on all four supported native paths and validated skill frontmatter. Local Chromium download was unavailable. GitHub CI passed the same 105 automated checks plus both real Chromium fixtures: 10 existing repair/regression visits and 9 traffic visits. The traffic fixture verified exact-origin marker isolation, unchanged request headers, accessible/restricted/challenged probes, unwanted QA emissions, original-contract repair verification and preservation of production conversion emission for an unmarked visit. Independent sandbox execution of the skill produced the expected evidence-bounded findings without establishing customer intent or changing a live system. CI: https://github.com/russpage/signalcheck/actions/runs/38024023134. Job: 114130911510.
 
 Run all 12 again on future description/support changes; do not carry these statuses forward automatically. Competitive governing claims require current comparison evidence and a separate gate.
