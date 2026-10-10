@@ -26,6 +26,8 @@ const actionable = finding => finding.severity !== 'info' || finding.code === 'E
 
 function requirements(finding) {
   const code = String(finding.code ?? '').toUpperCase();
+  if (/AGENT_POLICY/.test(code)) return ['browser', 'source', 'edge_logs', 'agent_trace'];
+  if (/SYNTHETIC/.test(code)) return ['browser', 'site_profile', 'tag_manager', 'destination_receipt'];
   if (gapCodes.test(code)) return ['browser', 'site_profile'];
   if (/FORM|EMBED/.test(code)) return ['browser', 'source', 'form_provider'];
   if (/EVENT|TAG|DUPLICATE|DESTINATION|CONSENT/.test(code)) return ['browser', 'source', 'tag_manager'];

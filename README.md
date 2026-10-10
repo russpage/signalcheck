@@ -6,6 +6,8 @@ SignalCheck is an open source skill and browser runner for checking website form
 
 Each browser report includes a fix queue: the observed problem, evidence, source access needed, suggested investigation and retest criteria. Your agent can use its connected tools to investigate and prepare authorized code or configuration changes. The included verifier checks an applied repair against the original browser contract and recorded regression scopes; changed expectations, omitted checks and new failures block verification.
 
+Traffic checks flag configured production conversion events emitted by QA visits and probe whether a site exposes an intended form to an agent user-agent. An evidence-import command separates synthetic QA, signed agents, verified bots, likely humans, suspected automation and unknown observations from authorized exports. Policy probes do not authenticate an agent; imported identity remains a source assertion.
+
 SignalCheck supplies the workflow and deterministic browser checks. Your host supplies tool access, credentials, execution, scheduling and any publishing authority. This package does not run an autonomous repair service or ship authenticated GTM/Shopify/CRM connectors. Browser verification does not prove downstream receipt.
 
 Created by **Russ Page**. https://github.com/russpage
@@ -56,6 +58,22 @@ node bin/report.mjs /absolute/path/qa/current/report.json
 ```
 
 On Linux CI use `npx playwright install --with-deps chromium` when required. `--help` shows the supported flags. The default run does not fill or submit forms. Page loads can generate genuine analytics traffic, so use a test environment or documented synthetic exclusions. Invalid-input checks require `--allow-invalid`; successful submissions require `--allow-submit` plus QA routing and outcome contracts. Start from `config/contracts.example.json` to configure those disabled journey templates. Purchases and destructive transactions are not executed.
+
+## Check test traffic and agent access
+
+Ask:
+
+> Use SignalCheck to check whether our QA visits emit production lead events and whether an agent can reach our quote form. Help me define permitted agent activities and test routing. Show what is a browser policy probe, what is authenticated evidence and what remains unknown. Prepare fixes and retest the original checks.
+
+Start from `skills/signalcheck/scripts/browser-qa/config/traffic.example.json`. Replace the site, target selector, production destination and reviewed agent user-agent. The optional storage marker needs a confirmed site integration; it does not install exclusions or suppress real leads by itself. Successful submissions retain the normal authorization and synthetic-routing gates. Browser emissions do not establish vendor counting.
+
+For actual traffic, your agent obtains and normalizes an authorized log export using its available tools:
+
+```sh
+npm run traffic -- --input /private/normalized-export.json --output /private/traffic-report.json
+```
+
+See `skills/signalcheck/references/traffic.md` for the export contract, evidence requirements and scoped retests. Reports preserve source units, time windows, sampling and unknown classifications. The importer verifies neither signatures nor vendor receipt; it reports trusted-source assertions and correlated outcomes. SignalCheck does not automatically block traffic, allowlist agents or change consent settings.
 
 ## Turn a finding into a fix
 

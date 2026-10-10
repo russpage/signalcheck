@@ -1,0 +1,36 @@
+{
+  "$schema": "./schema.json",
+  "site": "replace-with-your-domain.example",
+  "pages": [
+    {
+      "url": "https://replace-with-your-domain.example/contact",
+      "expectedForms": [
+        {
+          "selector": "form#contact"
+        }
+      ],
+      "agentAccess": {
+        "kind": "policy-probe",
+        "userAgent": "ReplaceWithReviewedAgentUserAgent/1.0",
+        "challengeSelectors": [
+          "#configured-challenge"
+        ]
+      }
+    }
+  ],
+  "devices": [
+    "desktop"
+  ],
+  "consentStates": [
+    "unset"
+  ],
+  "traffic": {
+    "excludedEvents": [
+      {
+        "vendor": "ga4",
+        "destinationId": "G-PRODUCTION",
+        "eventName": "generate_lead"
+      }
+    ]
+  }
+}

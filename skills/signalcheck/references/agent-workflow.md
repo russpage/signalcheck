@@ -75,3 +75,7 @@ Close only as `verified-browser-scope`: the original observed failure is absent 
 ## Recurring operation
 
 The scheduled runner collects evidence without an LLM. A separately configured host-agent job can read the private artifact, load the persistent ledger, investigate newly actionable items and prepare authorized fixes. Tool credentials, host-agent scheduling, notification routing and publishing policy must be configured by that host; the bundled daily scan does not create them. Reuse scoped IDs to avoid duplicate work, preserve blocked items and surface stale/failed scans. Do not claim a repair agent is running merely because a browser schedule exists.
+
+## Traffic evidence and repair boundaries
+
+Read `traffic.md` for test exclusions and human/bot/agent evidence. Discover `edge_logs`, `agent_trace` and `destination_receipt` capabilities only when actual host tools supply them. A browser policy probe requires real agent confirmation before treating a restriction as an agent-specific defect. A QA emission repair can be verified only in browser scope; counting exclusion needs a separately correlated destination observation. Imported traffic findings keep their own checkpoint and never inherit browser-verifier certification. Preserve intended consent and security behavior; prepare a narrow change and retest original target and related regression scopes.

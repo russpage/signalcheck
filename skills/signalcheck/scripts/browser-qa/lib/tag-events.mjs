@@ -385,7 +385,7 @@ export function analyzeTagEvents(events, options = {}) {
       const missing = matched.length < min;
       findings.push(finding(missing ? 'missing_expected_event' : 'unexpected_event_count', missing ? 'error' : 'warning', missing ? 'Expected tracking event did not fire' : 'Tracking event exceeded the expected count', matched, {
         expected: expectation.count ?? { min, max: Number.isFinite(max) ? max : null }, actual: matched.length, confidence: 'high',
-        rule: Object.fromEntries(keys.filter((key) => expectation[key] !== undefined).map((key) => [key, expectation[key]])),
+        rule: { ...Object.fromEntries(keys.filter((key) => expectation[key] !== undefined).map((key) => [key, expectation[key]])), ...(expectation.syntheticExclusion ? { syntheticExclusion: true } : {}) },
         cause: 'Observed logical event count differs from the configured journey contract.',
         suggestion: missing ? 'Check consent state, the relevant GTM trigger and destination ID, successful form completion, and blocked requests. Confirm the rule describes this journey.' : 'Check duplicate trigger paths and whether this journey intentionally includes repeated actions. Count requests only after known companion/dedup pairs are normalized.',
       }));

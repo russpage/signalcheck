@@ -22,6 +22,7 @@ Ask about business decisions the agent cannot infer safely:
 - Which intended destinations should receive which events? Explain any ambiguity using plain language and actual observations. Offer a draft for correction, never silently adopt the live implementation as correct.
 - What is legitimate repetition: two destinations, two different actions or a repeated submission?
 - For submissions: where should the QA lead go, and which follow-up must be suppressed?
+- For traffic checks: which activities should customer agents be allowed to perform, and which production conversions must exclude QA? Show the actual quote form or other chosen target. Keep identity, intent and accepted business outcome separate; do not make the user choose technical bot-score thresholds.
 
 Show a readable contract before its JSON: “One accepted quote request should create one lead and send one lead event to each approved destination.” Mark unknown destinations and backend stages untested. Record the user's choices and source of each expectation. Ask only the next decision that blocks progress; use up to three short questions per exchange when needed.
 
