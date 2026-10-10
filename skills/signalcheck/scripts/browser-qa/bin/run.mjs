@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { parseNetworkRequests, analyzeTagEvents, redactPageUrl } from '../lib/tag-events.mjs';
 import { consoleCategory, expectedFormResult, invalidValidationResult, backendWriteDecision, validateSteps } from '../lib/browser-checks.mjs';
 
+import { validateTrafficConfig, syntheticExpectations, rejectConflictingExclusions, installSyntheticMarker, QA_STORAGE_KEY, agentAccessResult } from '../lib/traffic.mjs';
+
 const TAG_URL = /googletagmanager|google-analytics|analytics\.google|googleadservices|doubleclick|facebook\.(?:com|net)|connect\.facebook|klaviyo|tiktok|hotjar|clarity\.ms|segment\.(?:io|com)|customer(?:\.io|io)|adroll|pinterest|bing\.com|linkedin|snapchat|attentivemobile|yotpo/i;
 const PII_KEY = /(?:email|phone|mobile_number|first.?name|last.?name|full.?name|address|password|passwd|secret|token|authorization|cookie|user_id|customer_id|visitor_id|client_id|session_id|gclid|fbclid|msclkid|ttclid|_fbp|_fbc|transaction_id|order_id)/i;
 const HELP = `SignalCheck website forms and tracking QA\n\nUsage:\n  node bin/run.mjs --config config/site.json --output reports/current\n  node bin/run.mjs --config config/site.json --previous reports/prior/report.json\n\nOptions:\n  --config PATH       Site configuration JSON (default: config/example.json)\n  --output DIR        Reports and masked screenshots\n  --previous PATH     Previous comparable report\n  --allow-invalid     Run enabled invalid-validation journeys with write blocking\n  --allow-submit      Run enabled submission journeys with confirmed QA routing\n  --help              Print this help\n\nDefault: bounded configured pages, consent controls and reviewed navigation\nsteps; no form filling/submission. Browser page loads can emit real analytics.\nInvalid-input tests block backend writes and form action URLs. Successful\nsubmissions additionally require enabled=true, confirmed synthetic routing,\nverified success selector/URL and event contracts. Purchases and destructive\nactions are unsupported. Event claims require this actual browser run.\n`;
@@ -60,7 +62,8 @@ function displayMetadata(value) {
 function contractSignature(config, task, expectations) {
   // Only this opaque signature is stored. A changed form, selector, step,
   // journey or observation window must never "resolve" an old contract failure.
-  return hash({ version: 2, config, task, expectations });
+  const { qaRunId, ...contractConfig } = config;
+  return hash({ version: 2, config: contractConfig, task, expectations });
 }
 function progressLine(task) {
   return `Testing ${task.type}: ${safeUrl(task.url)} (${scrubString(task.device)}, ${task.consentState})\n`;
@@ -144,6 +147,7 @@ function validateConfig(config) {
     const url = new URL(entry.url);
     if (!allowedOrigins.has(url.origin)) throw new Error(`URL origin is outside allowedOrigins: ${url.origin}`);
   }
+  validateTrafficConfig(config, allowedOrigins);
   const devices = config.devices ?? ['desktop'];
   const consentStates = config.consentStates ?? ['unset'];
   if (!Array.isArray(devices) || !devices.length) throw new Error('config.devices must be a nonempty array.');
@@ -167,6 +171,9 @@ function validateConfig(config) {
   }
   const planned = pages.length * devices.length * consentStates.length + journeys.filter(j => j.enabled).reduce((sum, j) => sum + (j.devices ?? devices).length * (j.consentStates ?? consentStates).length, 0);
   if (planned > numberOption(config.maxVisits, 200, 1, 200)) throw new Error('Planned browser visits exceed maxVisits (maximum 200).');
+  for (const entry of [...pages, ...journeys]) for (const device of entry.devices ?? devices) for (const consentState of entry.consentStates ?? consentStates) {
+    rejectConflictingExclusions([...pageExpectations(config, consentState, device, entry), ...(entry.formSelector ? entry.expectedEvents ?? [] : []).map(item => expectation(item)), ...(entry.steps ?? []).flatMap(step => (step.expectedEvents ?? []).map(item => expectation(item))), ...syntheticExpectations(config, consentState, device)]);
+  }
   return { pages, journeys, devices, consentStates };
 }
 
@@ -284,16 +291,19 @@ async function captureVisit(browser, playwrightDevices, config, task, outputDir)
     device: task.device, consentState: task.consentState, effectiveConsentState: task.consentState === 'unset' ? 'unset' : 'unverified',
     status: 'pending', startedAt, actions: [], forms: [], tagScripts: [], containers: [], dataLayer: [], events: [], findings: [], consoleErrors: [], requestFailures: [] };
   const profile = config.deviceProfiles?.[task.device] ?? (task.device === 'mobile' ? playwrightDevices['Pixel 7'] : { viewport: { width: 1440, height: 1000 } });
+  const agentProbe = task.agentAccess ?? task.journey?.agentAccess;
+  visit.traffic = { category: 'synthetic-qa', execution: agentProbe ? 'agent-policy-probe' : 'browser-qa', marker: config.traffic?.syntheticMarker ? 'pending' : 'not-configured', productionCounting: 'untested' };
   const context = await browser.newContext({ ...profile, locale: config.locale ?? 'en-US', timezoneId: config.timezone ?? 'UTC',
     ignoreHTTPSErrors: false,
     ...(config.browserHeaders ? { extraHTTPHeaders: config.browserHeaders } : {}),
-    ...(config.userAgent ? { userAgent: config.userAgent } : {}),
+    ...(agentProbe?.userAgent || config.userAgent ? { userAgent: agentProbe?.userAgent ?? config.userAgent } : {}),
     ...(config.serviceWorkers === 'block' || task.steps?.length || task.journey?.kind === 'invalid-validation' ? { serviceWorkers: 'block' } : {}) });
   let page;
   let actionId = `${task.id}:page-load`;
   const requests = []; const pending = new Set(); const requestRecords = new WeakMap(); const dataLayerEntries = [];
   const stepExpectations = [];
   try {
+    await installSyntheticMarker(context, config.traffic, config.qaRunId, task.id);
     await context.exposeBinding('__websiteQAPush', (source, payload) => {
       if (dataLayerEntries.length < 500) dataLayerEntries.push({ timestamp: new Date().toISOString(), actionId, frameUrl: safeUrl(source.frame?.url() ?? ''), value: safeDataLayer(payload) });
     });
@@ -332,6 +342,7 @@ async function captureVisit(browser, playwrightDevices, config, task, outputDir)
       const operation = Promise.resolve().then(() => {
         const record = requestRecords.get(response.request());
         if (record) record.httpStatus = response.status();
+        try { if (response.request().isNavigationRequest() && response.request().frame() === page.mainFrame()) visit.finalHttpStatus = response.status(); } catch { /* Detached frame. */ }
       });
       pending.add(operation); operation.finally(() => pending.delete(operation));
     });
@@ -351,6 +362,13 @@ async function captureVisit(browser, playwrightDevices, config, task, outputDir)
     });
     const navigation = await page.goto(task.url, { waitUntil: 'domcontentloaded', timeout: numberOption(config.navigationTimeoutMs, 30000, 5000, 120000) });
     visit.httpStatus = navigation?.status() ?? null;
+    if (config.traffic?.syntheticMarker) {
+      const markerPresent = await page.evaluate(({ key, origins, runId, visitId }) => {
+        try { const marker = JSON.parse(localStorage.getItem(key)); return origins.includes(location.origin) && marker?.kind === 'synthetic-qa' && marker.runId === runId && marker.visitId === visitId; } catch { return false; }
+      }, { key: QA_STORAGE_KEY, origins: config.traffic.syntheticMarker.origins, runId: config.qaRunId, visitId: task.id });
+      visit.traffic.marker = markerPresent ? 'observed-browser-storage' : 'unavailable';
+      if (!markerPresent) visit.findings.push(finding('SYNTHETIC_MARKER_UNVERIFIED', 'medium', 'The configured QA storage marker was not observed', 'Inspect the approved origin and browser storage. Do not claim synthetic exclusion without a correlated destination check.'));
+    }
     visit.finalUrl = safeUrl(page.url());
     visit.actions.push({ id: actionId, type: 'navigate', status: 'completed', timestamp: new Date().toISOString() });
     if (visit.httpStatus >= 400) visit.findings.push(finding('PAGE_HTTP_ERROR', 'high', `Page returned HTTP ${visit.httpStatus}`, 'Repair the page or update the configured test URL.', { actual: visit.httpStatus }));
@@ -403,6 +421,12 @@ async function captureVisit(browser, playwrightDevices, config, task, outputDir)
     }
     visit.finalUrl = safeUrl(page.url());
     await checkPageContracts(page, task, visit);
+    if (agentProbe) {
+      visit.agentChallengeObserved = false;
+      for (const selector of agentProbe.challengeSelectors ?? []) {
+        if (await page.locator(selector).first().isVisible()) visit.agentChallengeObserved = true;
+      }
+    }
     Object.assign(visit, { titleMetadata: displayMetadata(inventory.title), frames: redact(inventory.frames.map(({title, ...frame}) => ({...frame, titleMetadata: displayMetadata(title)}))), forms: redact(inventory.forms), tagScripts: redact(inventory.tagScripts) });
     visit.dataLayer = [...dataLayerEntries, ...inventory.dataLayer.map(entry => ({ timestamp: null, actionId: null, source: 'final-snapshot', frameUrl: entry.frameUrl, frameIndex: entry.frameIndex, value: safeDataLayer(entry.value) }))];
     for (const failure of inventory.providerFailures) visit.findings.push(finding('EMBEDDED_FORM_UNAVAILABLE', 'high', 'An embedded form reports that it is unavailable',
@@ -487,9 +511,11 @@ async function captureVisit(browser, playwrightDevices, config, task, outputDir)
     visit.parserWarnings = redact(parsed.warnings ?? []);
     const expectations = [...pageExpectations(config, visit.effectiveConsentState, task.device, task.type === 'page' ? task : {}), ...stepExpectations];
     if (task.journey) expectations.push(...(task.journey.expectedEvents ?? []).map(item => expectation(item, task.journey.kind === 'invalid-validation' ? null : task.journey.id)));
+    expectations.push(...syntheticExpectations(config, visit.effectiveConsentState, task.device));
+    rejectConflictingExclusions(expectations);
     visit.eventContractsConfigured = expectations.length > 0;
     visit.expectationSignature = contractSignature(config, task, expectations);
-    visit.findings.push(...analyzeTagEvents(parsed.events ?? [], { expectations, duplicateWindowMs: config.duplicateWindowMs ?? 2000, knownDestinations: config.knownDestinations ?? {} }).map(normalizeFinding));
+    visit.findings.push(...analyzeTagEvents(parsed.events ?? [], { expectations, duplicateWindowMs: config.duplicateWindowMs ?? 2000, knownDestinations: config.knownDestinations ?? {} }).map(entry => entry.rule?.syntheticExclusion && entry.code === 'unexpected_event_count' ? normalizeFinding({ ...entry, code: 'SYNTHETIC_CONVERSION_EMITTED', title: 'A production conversion was emitted during a QA visit', suggestion: 'Inspect the configured synthetic exclusion at this production destination. Browser emission does not prove a counted conversion.' }) : normalizeFinding(entry)));
     for (const error of visit.consoleErrors.filter(error => error.source === 'pageerror' || config.reportConsoleErrors === true)) visit.findings.push(finding('BROWSER_SCRIPT_ERROR', error.source === 'pageerror' ? 'medium' : 'low', `Browser ${error.category} observed`, 'Inspect the reported script location and reproduce the affected interaction. A script error alone does not prove conversion loss.', { confidence: 1, evidence: [error] }));
     for (const request of requests.filter(r => TAG_URL.test(r.url) && r.httpStatus >= 400).slice(0, 20)) {
       visit.findings.push(finding('TAG_HTTP_ERROR', 'high', `Tracking endpoint returned HTTP ${request.httpStatus}`, 'Inspect the destination ID, endpoint, required parameters, and vendor response.',
@@ -518,6 +544,10 @@ async function captureVisit(browser, playwrightDevices, config, task, outputDir)
     await drain(pending);
     await context.close().catch(() => {});
     visit.finishedAt = new Date().toISOString();
+    if (agentProbe) {
+      visit.agentAccess = agentAccessResult(visit);
+      if (['restricted', 'challenged', 'target-unavailable'].includes(visit.agentAccess.status)) visit.findings.push(finding('AGENT_POLICY_PROBE_RESTRICTED', 'medium', 'An agent policy probe could not access its configured target', 'Trace the access rule or target failure, then confirm through a real authenticated agent. This user-agent probe does not establish agent identity or the cause.', { actual: visit.agentAccess.status }));
+    }
   }
   return visit;
 }
@@ -594,14 +624,15 @@ async function main() {
   const config = JSON.parse(await fs.readFile(configPath, 'utf8'));
   const { pages, journeys, devices, consentStates } = validateConfig(config);
   const runId = new Date().toISOString().replace(/[:.]/g, '-');
+  config.qaRunId = crypto.randomUUID();
   const outputDir = path.resolve(args.output ?? path.join('runs', runId));
   const latestPath = path.resolve(config.latestReportPath ?? path.join(path.dirname(outputDir), 'latest-report.json'));
   const previous = await previousReport(path.resolve(args.previous ?? latestPath));
   await fs.mkdir(path.join(outputDir, 'screenshots'), { recursive: true });
-  const report = { schemaVersion: '1.1', runId, startedAt: new Date().toISOString(), mode: args.allowSubmit ? 'submission-enabled' : args.allowInvalid ? 'invalid-validation-enabled' : 'read-only',
-    site: config.site ?? new URL(pages[0].url).hostname, status: 'running', executionComplete: false, finishedAt: null, configPath,
+  const report = { schemaVersion: '1.2', runId, startedAt: new Date().toISOString(), mode: args.allowSubmit ? 'submission-enabled' : args.allowInvalid ? 'invalid-validation-enabled' : 'read-only',
+    site: config.site ?? new URL(pages[0].url).hostname, traffic: { category: 'synthetic-qa', runMarkerId: config.qaRunId, productionCounting: 'untested' }, status: 'running', executionComplete: false, finishedAt: null, configPath,
     coverage: { pageVisitsPlanned: pages.length * devices.length * consentStates.length, pageVisitsCompleted: 0, journeysPlanned: journeys.length, journeysTested: 0,
-      journeysSkipped: 0, limitations: ['Browser requests prove an attempted dispatch, not vendor ingestion or server-side delivery.', 'Actual backend receipt, CRM records, and browser/server deduplication require separate authenticated checks.', 'Consent controls are clicked where configured; legal compliance and manager state are not certified.', 'An absent configured expectation is reported as untested, not as a pass.', 'dataLayerTimelineComplete=false marks incomplete dataLayer history; network and inspected-form checks can still complete.'] },
+      journeysSkipped: 0, limitations: ['Browser requests prove an attempted dispatch, not vendor ingestion or server-side delivery.', 'Actual backend receipt, CRM records, and browser/server deduplication require separate authenticated checks.', 'Consent controls are clicked where configured; legal compliance and manager state are not certified.', 'An absent configured expectation is reported as untested, not as a pass.', 'All runner visits are synthetic QA. Storage marking needs site integration; browser emission checks do not verify production counting.', 'Agent policy probes alter only user-agent identity claims; authenticated agent access requires separately correlated source evidence.', 'dataLayerTimelineComplete=false marks incomplete dataLayer history; network and inspected-form checks can still complete.'] },
     visits: [], journeys: [], findings: [] };
   const tasks = [];
   for (const [index, entry] of pages.entries()) for (const device of devices) for (const consentState of consentStates) {

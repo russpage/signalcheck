@@ -1,7 +1,6 @@
 ---
 name: signalcheck
-license: MIT
-description: Check website forms and tracking in a real browser; guide setup, investigate failures with available connected tools, prepare authorized repairs and retest unchanged contracts. Use for missing or duplicate events, broken forms, consent checks, daily QA, fix queues, update checks and setup feedback. Distinguish browser evidence from backend receipt; the host supplies execution, integrations and authority.
+description: Check website forms and tracking in a real browser, investigate failures with available tools and retest unchanged contracts. Use for missing or duplicate events, broken forms, consent checks, QA traffic exclusions, human/bot/agent traffic evidence, agent-access probes, daily QA, fix queues and update feedback. Distinguish browser emissions and policy probes from authenticated identity, backend receipt and counted conversions; the host supplies tools, execution and authority.
 ---
 
 # SignalCheck
@@ -49,6 +48,10 @@ Use Node 22 or newer. On Linux CI, install Chromium's system dependencies when r
 - Invalid-input journeys require `--allow-invalid`; the runner intercepts write requests and checks that validation prevents submission. Authorized successful submissions require `--allow-submit` and the profile's explicit QA identity/suppression settings. Neither flag is enabled by the daily template. Check intercepted write attempts and unintended conversion emissions separately from validation messages.
 - Inspect `executionComplete`, coverage and per-visit status. A replaced dataLayer hook limits the timeline; use captured network evidence and state that boundary. Failed navigation, consent, frame or request capture prevents a verified result for affected checks.
 - If browser execution is unavailable, return the discovered inventory and explicit untested runtime checks. Provide the exact runnable command or CI setup; do not fabricate firing results.
+
+## Check traffic quality and agent access
+
+Read [traffic.md](references/traffic.md) for human/bot/agent traffic questions, synthetic exclusions or agent access. Separate execution identity, intended activity and business outcome. Mark runner visits as synthetic QA; use approved first-party storage only with confirmed site integration. Configure zero-emission contracts for production destinations and keep QA-destination success checks. Probe a reviewed agent user-agent against a target contract without claiming authenticated identity. Confirm actual traffic with authorized source evidence and `bin/traffic.mjs`; retain source units, windows, unknown classifications and counting boundaries. Imported evidence does not become browser verification. Preserve consent and security policies; prepare scoped changes and retest the same contracts.
 
 ## Diagnose without false duplicate claims
 

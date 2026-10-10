@@ -1,5 +1,5 @@
 {
   "name": "signalcheck",
-  "version": "0.3.0",
-  "description": "Check website forms and tracking in a real browser. Give your agent a fix queue, tool guidance and retests against the original checks."
+  "version": "0.4.0",
+  "description": "Check forms and tracking in a real browser. Flag QA conversion emissions, probe agent access and retest fixes against the original checks."
 }

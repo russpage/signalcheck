@@ -1,7 +1,7 @@
 {
   "name": "signalcheck",
-  "version": "0.3.0",
-  "description": "Check website forms and tracking in a real browser. Give your agent a fix queue, tool guidance and retests against the original checks.",
+  "version": "0.4.0",
+  "description": "Check forms and tracking in a real browser. Flag QA conversion emissions, probe agent access and retest fixes against the original checks.",
   "author": "Russ Page (https://github.com/russpage)",
   "license": "MIT",
   "private": true,
@@ -17,6 +17,7 @@
     "scan": "node skills/signalcheck/scripts/browser-qa/bin/run.mjs",
     "report": "node skills/signalcheck/scripts/browser-qa/bin/report.mjs",
     "actions": "node skills/signalcheck/scripts/browser-qa/bin/actions.mjs",
-    "updates": "node skills/signalcheck/scripts/browser-qa/bin/updates.mjs"
+    "updates": "node skills/signalcheck/scripts/browser-qa/bin/updates.mjs",
+    "traffic": "node skills/signalcheck/scripts/browser-qa/bin/traffic.mjs"
   }
 }

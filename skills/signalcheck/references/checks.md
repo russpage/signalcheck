@@ -29,6 +29,10 @@ Use a bounded critical-path suite daily and broader discovery periodically. This
 | Consent | Fresh contexts with configured accept/reject controls and observed events | Bundled; control interaction and event differences are evidence, not full policy verification |
 | Consent | Default-before-tag order, Consent Mode signals, cookies/storage, withdrawal and regrant | Browser/Tag Assistant; deterministic signal/storage observers planned |
 | Consent | Jurisdiction-specific CMP behavior, locale, Global Privacy Control where required by site policy | Browser/manual plus configured environment; geo/policy matrix planned |
+| Traffic | Label all runner visits as synthetic; optional exact-origin storage marker | Bundled opt-in marking needs reviewed site integration; no automatic production exclusion or server identity |
+| Traffic | Configured production conversion must not emit during QA | Bundled zero-event rule; browser emission only, not vendor counting |
+| Traffic | Human/bot/agent categories from normalized source exports | Bundled importer; source assertions, fixed unit/window/sampling, unknowns preserved; no vendor connectors or signature verifier |
+| Agent access | Reviewed user-agent probe with target form/selector and challenge observations | Bundled on pages and supported gated journeys; real authenticated agent identity/access remains separate Access evidence |
 | Attribution | UTMs, approved click-ID fixtures, referrer and landing-to-conversion continuity | Browser plus Access; bundled attribution assertions planned |
 | Identity | Anonymous-to-known transition, session continuity, cross-domain linker and iframe handoffs | Browser plus Access; server identity and reporting joins require independent evidence |
 | Backend | Form/booking/order record received with run correlation | Access; separate application/CRM observer required |

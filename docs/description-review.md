@@ -1,59 +1,58 @@
-# Description review — 0.3.0
+# Description review — 0.4.0
 
-Reviewed 2026-10-09 using Product Language Fit. Scope: accurate repository onboarding and utility descriptions for agent users. This is an editorial assessment of shipped behavior, not customer comprehension or market validation. No exclusivity or emotional outcome is asserted.
+Reviewed 2026-10-10 with Product Language Fit. Scope: repository onboarding and accurate utility descriptions for agent users. Basis: editorial/model review and implementation evidence, not customer comprehension or market validation. Preserve the approved check → investigate → retest proposition; this update clarifies traffic functionality rather than asserting competitive exclusivity.
 
-## Exact surfaces
+## Exact surfaces and context
 
-README opening: **Check the form. Investigate the failure. Retest the fix.**
+README opening (retained): **Check the form. Investigate the failure. Retest the fix.**
 
-Package/plugin description: **Check website forms and tracking in a real browser. Give your agent a fix queue, tool guidance and retests against the original checks.**
+Package/plugin description: **Check forms and tracking in a real browser. Flag QA conversion emissions, probe agent access and retest fixes against the original checks.**
 
-Skill description: **Check website forms and tracking in a real browser; guide setup, investigate failures with available connected tools, prepare authorized repairs and retest unchanged contracts. Use for missing or duplicate events, broken forms, consent checks, daily QA, fix queues, update checks and setup feedback. Distinguish browser evidence from backend receipt; the host supplies execution, integrations and authority.**
+Skill description: **Check website forms and tracking in a real browser, investigate failures with available tools and retest unchanged contracts. Use for missing or duplicate events, broken forms, consent checks, QA traffic exclusions, human/bot/agent traffic evidence, agent-access probes, daily QA, fix queues and update feedback. Distinguish browser emissions and policy probes from authenticated identity, backend receipt and counted conversions; the host supplies tools, execution and authority.**
 
-Agent list label: **Check forms and tracking; investigate and retest fixes**
+README added support: **Traffic checks flag configured production conversion events emitted by QA visits and probe whether a site exposes an intended form to an agent user-agent. An evidence-import command separates synthetic QA, signed agents, verified bots, likely humans, suspected automation and unknown observations from authorized exports. Policy probes do not authenticate an agent; imported identity remains a source assertion.**
 
-Default prompt: **Use $signalcheck to check my priority website journey in a real browser, investigate failures with available tools, prepare authorized fixes and retest the original contract.**
+The actual README's “Check test traffic and agent access” section includes a task prompt, example profile, private import command and explicit integration/identity/counting limits. Remaining support preserves the original fix queue, host-supplied access, unchanged contracts and backend boundary. Agent list label and default prompt are unchanged and remain consistent with the core workflow. Evaluate the package/skill descriptions as utility/trigger components in this context; do not promote them to unique positioning or a market-tested promise.
 
-The actual README support explains the fix queue, host-supplied tools, browser-scope verification, incomplete/changed checks and unavailable backend connectors. Installation commands and a concrete first-journey prompt provide the next action. The skill and labels are utility/trigger components, not claims of market-wide differentiation.
+## Clarification and baseline comparison
 
-## Direction selection
+Compare three wording variants within the approved idea: “detect bots and agents” overstates identity verification; “separate test traffic” implies automatic exclusion; “flag QA conversion emissions, probe agent access” names the implemented observations. Select the third as the supported clarification. The export explanation explicitly attributes identity to authorized source assertions. No broad positioning ideation is needed for this narrow functional update. No customer outcomes, revenue lift, emotional effects or setup-speed claims are made.
 
-The approved direction is an agent-guided improvement workflow. Considered routes: forms/events inventory (existing scan truth, omits repair); fix queue (actual action ledger, needs access qualifications); tool integration (host workflow, risks implying bundled connectors); unchanged-contract retests (deterministic verifier, needs browser boundary); guided setup (priority action/co-created intent, no measured delight claim). Combine the fix queue with unchanged-contract verification; use the setup and update paths as supporting functionality. The plain-language baseline is: find an observed problem, investigate it using available tools and check the repair against the original test.
+## Claim-evidence record
 
-## Claims and evidence
-
-| Claim | Source and scope | Publication treatment |
+| Material claim | Direct evidence | Scope and publication treatment |
 | --- | --- | --- |
-| Real browser form/tracking checks | `bin/run.mjs`; real Chromium fixture | Bound by configured routes, contracts and supported parsers |
-| Fix queue and handoff | `lib/action-plan.mjs`, `bin/actions.mjs`, `bin/report.mjs`; automated tests | Host-driven, private ledger; tool names do not create integrations |
-| Available-tool investigation and authorized preparation | `SKILL.md`, `references/agent-workflow.md` | Workflow supplied; actual tool calls/access are host-dependent |
-| Retest original checks | `verifyAction`; old run/changed scope/capture/regression tests; local browser repair fixture | Browser-scope verification, not causal proof or downstream receipt |
-| Guided setup and feedback | `references/onboarding.md`, issue forms | Design instructions; delight, setup speed and adoption unmeasured |
-| Main-change checks | `bin/updates.mjs`; mocked upstream tests | A one-shot checker; scheduler and delivery are separately configured |
+| Forms and tracking in a real browser | `bin/run.mjs`, existing real Chromium fixture | Configured pages, supported parser/contracts; downstream receipt separate |
+| QA conversion emission findings | `syntheticExpectations`, parser rule annotation, `SYNTHETIC_CONVERSION_EMITTED` | Explicit production destination/event contract; not counted conversion proof |
+| Optional test marker | `installSyntheticMarker`, marker observation and traffic browser fixture | Exact-origin browser storage with confirmed site integration; no network identity, automatic exclusions or security trust |
+| Probe agent access | `agentAccessResult`, reviewed per-task user-agent, target/challenge contracts | Synthetic policy probe; real signed identity, intent and cause remain unverified |
+| Traffic categories | `analyzeTrafficExport`, typed source/window/unit/evidence contract and tests | Host-attested inputs; unknowns retained; no live collection, signature verifier or invented probability |
+| Retest original contracts | Action verifier and unchanged scope; traffic fixture repair | Browser scope only; runtime marker randomness excluded, traffic policy changes retained in signature |
+| Guided business choices | Onboarding and traffic references | Design instructions; no measured delight/adoption claim |
 
-## Canonical gate
+## Canonical 12-test gate
 
-Assessed exact descriptions and the opening within its actual README support. Standalone labels remain scoped utility components; no 12/12 marketing approval is claimed.
+Run on exact updated utility descriptions and README support above. Standalone descriptions remain utility components; no 12/12 marketing certification is claimed.
 
-| Test | Status | Concrete reason and review basis |
+| Test | Status | Concrete reason and source/review basis |
 | --- | --- | --- |
-| Pointing | Pass | Forms/network capture, private actions and original-scope verification point to the named code and tests. |
-| Visual | Pass | The reader can picture checking a form, investigating a failure and running its test again; support shows concrete commands and queue contents. |
-| Falsifiable | Pass | Code/tests can refute the claims if no queue is emitted or changed/omitted checks verify; host and browser boundaries define scope. |
-| Ownable | Pass | Utility role: describes this package's mechanisms accurately without claiming competitors lack them. Not approval of unique positioning. |
-| Two-second | Pass | Editorial inference: the opening means check, investigate and retest a website failure. Actor and technical dependencies are explicit in support. No timed customer test. |
-| Promise | Pass | Offers a check-and-repair workflow for the website journey the reader selects, without guaranteeing automatic production fixes. |
-| Delivery | Pass | Actual README describes queue generation, connected host tools, reviewable changes and unchanged-contract retests, then supplies commands. |
-| Evidence | Pass | Material implementation claims are tied to the sources above. Host execution and backend limitations prevent implied autonomous/receipt claims. Validation results are recorded separately after actual tests. |
-| Competitor | Pass | Limited utility role: no superiority/uniqueness claim. A manual raw-report workflow is the relevant practical alternative; utility words are not presented as competitive exclusivity. No competitor capability claims made. |
-| Voice | Pass | Editorial basis: uses the user's concrete vocabulary (forms, events, fixes, agent tools) and short action clauses, avoiding inflated AI/productivity promises. |
-| Action | Pass | Installation commands and the priority-journey prompt give the next step; repairs and update integration name the required host and authorization. |
-| Read-aloud | Pass | Written spoken-flow review: three short opening clauses share imperative rhythm; descriptions have one clear actor and no stacked superiority language. No audio/user reading claimed. |
+| Pointing | Pass | “Flag”, “probe” and “retest” point to named emission rules, target observations and original-contract verifier; no adjective carries the claim. |
+| Visual | Pass | A user can picture a form visited by a test, a production lead event flagged, an agent probe meeting a challenge and the same check rerun; README supplies the actual profile and command. |
+| Falsifiable | Pass | A configured production event must produce the named finding; a changed contract must not certify a repair; probe output must retain authenticated-agent untested. Code/tests can refute each at its stated scope. |
+| Ownable | Pass | Limited utility role: accurately describes mechanisms shipped here. No assertion that other QA tools lack markers, probes or imports, and no exclusive governing proposition. |
+| Two-second | Pass | Editorial inference from exact clauses: check the site, flag test conversions, probe access, retest the repair. README immediately distinguishes imported evidence from probe identity. No timed customer test. |
+| Promise | Pass | Offers concrete observable checks for the selected website journey and a repair workflow; does not promise complete bot detection, customer attribution or automated protection. |
+| Delivery | Pass | README support names configured production events, reviewed agent user-agent and evidence import, then supplies the matching example, command and limits. Core fix/retest commands continue the opening's thought. |
+| Evidence | Pass | Product claims are bounded to inspected code and deterministic observations listed above. Optional integration and host attestation are explicit; no fixture is presented as live customer traffic or final vendor counting. Validation status is recorded separately. |
+| Competitor | Pass | Utility/category role only; wording/proof swap against a manual log review or browser-only QA workflow establishes no superiority assertion. Unknown competitor capabilities remain unknown; no market-wide distinction is claimed. |
+| Voice | Pass | Editorial basis: forms, events, QA, agent access and retests fit the user's existing task vocabulary. Each verb names an action instead of claiming AI transformation or guaranteed insight. |
+| Action | Pass | README provides the traffic profile and private import command plus a priority-journey prompt. Source access is requested only when needed, and production changes retain their authorization boundary. |
+| Read-aloud | Pass | Written spoken-flow review: short first sentence, then three parallel verbs. “Probe” is explained in nearby support; longer trigger description separates uses from evidence boundaries. No human/audio reading claimed. |
 
-Adversarial editorial review: reading “retest the fix” as universal repair success is bounded immediately by recorded browser contracts, regression scopes and unsupported backend receipt. “Tool guidance” does not claim bundled authenticated connectors. “Update check” does not imply a silent subscription or unattended update. Replacing the name with another tool would not create an unsupported uniqueness claim because these descriptions remain in a utility role.
+Adversarial editorial review: “agent access” cannot be read honestly as authenticated identity because the governing verb is “probe” and the immediate support explicitly denies that inference. “QA conversion emissions” is narrower than counted conversions. “Separates” is limited to authorized imported observations with provenance, unknowns and units, not all visitors. A client storage marker is never an anti-abuse credential. No broad blocking/allowlisting or connector execution is implied. Descriptions name the shipped function and do not assert that its tests improve revenue.
 
-## Continuing requirement
+## Validation record
 
-Run PLF again on each description revision, including changed surrounding support; do not carry these judgments forward automatically. Preserve canonical test order and statuses. If a future governing positioning claim asserts a competitive difference, research credible alternatives before approving it.
+Local: 12 installer checks and 93 runner checks passed; installed the complete updated package on all four supported native paths and validated skill frontmatter. Local Chromium download was unavailable; real-browser fixtures must pass in GitHub CI before main integration. Record the final CI URL and results after they are observed.
 
-Validation completed: 11 installer checks and 80 diagnostic/action/update checks passed locally and in GitHub CI. The 10-visit real Chromium fixture detected an unwanted conversion, applied a local validation repair and verified the original browser contract with downstream receipt still untested. CI: https://github.com/russpage/signalcheck/actions/runs/37966235834
+Run all 12 again on future description/support changes; do not carry these statuses forward automatically. Competitive governing claims require current comparison evidence and a separate gate.
