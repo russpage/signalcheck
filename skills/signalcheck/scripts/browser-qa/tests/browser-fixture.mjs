@@ -19,7 +19,7 @@ const embedUrl = `http://127.0.0.1:${embedded.address().port}`;
 let repaired = false;
 const server = http.createServer((request, response) => {
   if (request.url.startsWith('/custom-sdk.js')) { response.setHeader('Content-Type', 'application/javascript'); response.end('window.customSDKLoaded=true'); return; }
-  if (request.url.startsWith('/custom-events')) { response.writeHead(204); response.end(); return; }
+  if (request.url.startsWith('/custom-events')) { response.writeHead(200, {'Content-Type':'application/json'}); response.end('{}'); return; }
   if (request.url.startsWith('/custom-error')) { response.writeHead(503); response.end(); return; }
   if (request.url.startsWith('/g/collect')) { response.writeHead(204); response.end(); return; }
   if (request.url.startsWith('/api/leads')) { receivedLeads++; response.writeHead(200); response.end('accepted'); return; }
@@ -66,7 +66,7 @@ try {
   assert.equal(receivedLeads,0,'No invalid form write should reach the fixture backend');
   const page=report.visits.find(v=>v.type==='page');
   assert.equal(page.tagRequestChecks.find(c=>c.id==='custom-sdk').status,'verified-browser-request');
-  assert.equal(page.tagRequestChecks.find(c=>c.id==='custom-pageview').status,'verified-browser-request',JSON.stringify({checks:page.tagRequestChecks,findings:page.findings.filter(f=>f.rule?.id==='custom-pageview')}));
+  assert.equal(page.tagRequestChecks.find(c=>c.id==='custom-pageview').status,'verified-browser-request',JSON.stringify({checks:page.tagRequestChecks,requestFailures:page.requestFailures,findings:page.findings.filter(f=>f.rule?.id==='custom-pageview')}));
   assert.equal(page.tagRequestChecks.find(c=>c.id==='custom-details').actual,1);
   assert.equal(page.tagRequestChecks.find(c=>c.id==='custom-details').status,'verified-browser-request');
   assert.ok(page.findings.some(f=>f.code==='TAG_REQUEST_DELIVERY_FAILED'));
