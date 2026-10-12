@@ -1,4 +1,4 @@
 interface:
   display_name: "SignalCheck"
-  short_description: "Check forms and tracking; investigate and retest fixes"
-  default_prompt: "Use $signalcheck to check my priority website journey in a real browser, investigate failures with available tools, prepare authorized fixes and retest the original contract."
+  short_description: "Find broken forms and tracking mistakes"
+  default_prompt: "Use $signalcheck to check my website’s most important form, investigate any problems with the tools I have connected and check fixes against the same test."

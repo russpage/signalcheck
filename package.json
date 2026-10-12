@@ -1,7 +1,7 @@
 {
   "name": "signalcheck",
   "version": "0.4.0",
-  "description": "Check forms and tracking in a real browser. Flag QA conversion emissions, probe agent access and retest fixes against the original checks.",
+  "description": "Find broken forms and tracking mistakes. Help your agent investigate what went wrong and check each fix against the original test.",
   "author": "Russ Page (https://github.com/russpage)",
   "license": "MIT",
   "private": true,
