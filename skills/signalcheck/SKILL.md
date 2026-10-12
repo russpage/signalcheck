@@ -1,6 +1,6 @@
 ---
 name: signalcheck
-description: Check website forms and tracking in a real browser, investigate failures with available tools and retest unchanged contracts. Use for missing or duplicate events, broken forms, consent checks, QA traffic exclusions, human/bot/agent traffic evidence, agent-access probes, daily QA, fix queues and update feedback. Distinguish browser emissions and policy probes from authenticated identity, backend receipt and counted conversions; the host supplies tools, execution and authority.
+description: Find broken website forms and tracking mistakes, help your agent investigate what went wrong and check each fix against the original test. Use when forms fail, tracking is missing or repeated, test visits affect reports, or an automated assistant cannot reach a form. Also use for consent checks, human/bot/agent traffic review, recurring website checks, updates and setup feedback. Distinguish what the browser showed from confirmed leads, sales and agent identity; further proof needs access to the relevant systems.
 ---
 
 # SignalCheck

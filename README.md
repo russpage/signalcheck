@@ -2,13 +2,13 @@
 
 Check the form. Investigate the failure. Retest the fix.
 
-SignalCheck is an open source skill and browser runner for checking website forms, analytics events, consent behavior and key customer actions. Install it in Claude Code, GitHub Copilot, Gemini CLI or OpenAI Codex. Start with the customer action you care about; your agent discovers the implementation and helps you define what should happen.
+SignalCheck helps your AI agent find broken forms and tracking mistakes on your website. Start with something a customer should be able to do: request a quote, join your email list or submit a contact form. Decide what should happen, then check what actually happens.
 
-Each browser report includes a fix queue: the observed problem, evidence, source access needed, suggested investigation and retest criteria. Your agent can use its connected tools to investigate and prepare authorized code or configuration changes. The included verifier checks an applied repair against the original browser contract and recorded regression scopes; changed expectations, omitted checks and new failures block verification.
+When a check fails, SignalCheck gives your agent the evidence to investigate. Your agent can use the tools you have connected to prepare a fix. SignalCheck then checks the repair against the same test. Changing the test or skipping a failed step does not count as a verified fix.
 
-Traffic checks flag configured production conversion events emitted by QA visits and probe whether a site exposes an intended form to an agent user-agent. An evidence-import command separates synthetic QA, signed agents, verified bots, likely humans, suspected automation and unknown observations from authorized exports. Policy probes do not authenticate an agent; imported identity remains a source assertion.
+It also helps investigate whether test visits are affecting your reports or whether an automated assistant can reach a chosen form. Human, bot and agent traffic can be reviewed using evidence from your systems; uncertain cases stay unknown.
 
-SignalCheck supplies the workflow and deterministic browser checks. Your host supplies tool access, credentials, execution, scheduling and any publishing authority. This package does not run an autonomous repair service or ship authenticated GTM/Shopify/CRM connectors. Browser verification does not prove downstream receipt.
+SignalCheck is an open source skill for Claude Code, GitHub Copilot, Gemini CLI and OpenAI Codex. Your AI app supplies the tools, access and permission to make changes. Browser tests show what happened in the test; confirming received leads, counted sales or agent identity needs evidence from your systems.
 
 Created by **Russ Page**. https://github.com/russpage
 
