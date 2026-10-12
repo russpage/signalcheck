@@ -8,6 +8,8 @@ import { consoleCategory, expectedFormResult, invalidValidationResult, backendWr
 
 import { validateTrafficConfig, syntheticExpectations, rejectConflictingExclusions, installSyntheticMarker, QA_STORAGE_KEY, agentAccessResult } from '../lib/traffic.mjs';
 
+import { validateTagRequests, analyzeTagRequests } from '../lib/tag-requests.mjs';
+
 const TAG_URL = /googletagmanager|google-analytics|analytics\.google|googleadservices|doubleclick|facebook\.(?:com|net)|connect\.facebook|klaviyo|tiktok|hotjar|clarity\.ms|segment\.(?:io|com)|customer(?:\.io|io)|adroll|pinterest|bing\.com|linkedin|snapchat|attentivemobile|yotpo/i;
 const PII_KEY = /(?:email|phone|mobile_number|first.?name|last.?name|full.?name|address|password|passwd|secret|token|authorization|cookie|user_id|customer_id|visitor_id|client_id|session_id|gclid|fbclid|msclkid|ttclid|_fbp|_fbc|transaction_id|order_id)/i;
 const HELP = `SignalCheck website forms and tracking QA\n\nUsage:\n  node bin/run.mjs --config config/site.json --output reports/current\n  node bin/run.mjs --config config/site.json --previous reports/prior/report.json\n\nOptions:\n  --config PATH       Site configuration JSON (default: config/example.json)\n  --output DIR        Reports and masked screenshots\n  --previous PATH     Previous comparable report\n  --allow-invalid     Run enabled invalid-validation journeys with write blocking\n  --allow-submit      Run enabled submission journeys with confirmed QA routing\n  --help              Print this help\n\nDefault: bounded configured pages, consent controls and reviewed navigation\nsteps; no form filling/submission. Browser page loads can emit real analytics.\nInvalid-input tests block backend writes and form action URLs. Successful\nsubmissions additionally require enabled=true, confirmed synthetic routing,\nverified success selector/URL and event contracts. Purchases and destructive\nactions are unsupported. Event claims require this actual browser run.\n`;
@@ -148,6 +150,11 @@ function validateConfig(config) {
     if (!allowedOrigins.has(url.origin)) throw new Error(`URL origin is outside allowedOrigins: ${url.origin}`);
   }
   validateTrafficConfig(config, allowedOrigins);
+  validateTagRequests(config.expectedTagRequests);
+  for (const entry of [...pages, ...journeys]) {
+    validateTagRequests([...(config.expectedTagRequests ?? []), ...(entry.expectedTagRequests ?? []), ...(entry.steps ?? []).flatMap(step => step.expectedTagRequests ?? [])]);
+    for (const step of entry.steps ?? []) validateTagRequests(step.expectedTagRequests);
+  }
   const devices = config.devices ?? ['desktop'];
   const consentStates = config.consentStates ?? ['unset'];
   if (!Array.isArray(devices) || !devices.length) throw new Error('config.devices must be a nonempty array.');
@@ -302,6 +309,7 @@ async function captureVisit(browser, playwrightDevices, config, task, outputDir)
   let actionId = `${task.id}:page-load`;
   const requests = []; const pending = new Set(); const requestRecords = new WeakMap(); const dataLayerEntries = [];
   const stepExpectations = [];
+  const stepTagRequests = [];
   try {
     await installSyntheticMarker(context, config.traffic, config.qaRunId, task.id);
     await context.exposeBinding('__websiteQAPush', (source, payload) => {
@@ -333,7 +341,7 @@ async function captureVisit(browser, playwrightDevices, config, task, outputDir)
         try { frameUrl = request.frame().url(); } catch { /* Service worker requests may have no frame. */ }
         const record = { url: request.url(), method: request.method(), postData: request.postData(), timestamp: capturedAt,
           actionId: capturedActionId, visitId: task.id, pageUrl: page.url() === 'about:blank' ? task.url : page.url(), frameUrl,
-          device: task.device, consentState: capturedConsent, channel: 'browser', source: 'playwright', httpStatus: null };
+          device: task.device, consentState: capturedConsent, channel: 'browser', source: 'playwright', resourceType: request.resourceType(), httpStatus: null };
         requests.push(record); requestRecords.set(request, record);
       }).catch(error => visit.findings.push(finding('REQUEST_CAPTURE_ERROR', 'low', 'A network request could not be inspected', 'Review the runner and retry this visit.', { evidence: [safeError(error)] })));
       pending.add(operation); operation.finally(() => pending.delete(operation));
@@ -347,6 +355,7 @@ async function captureVisit(browser, playwrightDevices, config, task, outputDir)
       pending.add(operation); operation.finally(() => pending.delete(operation));
     });
     context.on('requestfailed', request => {
+      const record = requestRecords.get(request); if (record) record.failureCategory = 'request-failed';
       if (visit.requestFailures.length < 100) visit.requestFailures.push({ url: safeUrl(request.url()), error: scrubString(request.failure()?.errorText ?? 'Unknown request failure'), actionId });
     });
     page.on('console', message => {
@@ -414,6 +423,7 @@ async function captureVisit(browser, playwrightDevices, config, task, outputDir)
         else await page.waitForURL(new RegExp(step.urlPattern));
         await page.waitForTimeout(numberOption(step.settleMs, 500, 0, 10000));
         stepExpectations.push(...(step.expectedEvents ?? []).map(item => expectation(item, actionId)));
+        stepTagRequests.push(...(step.expectedTagRequests ?? []).map(rule => ({ ...rule, actionId: rule.actionId ?? actionId })));
         visit.actions.push({ id: actionId, type: step.type, status: 'completed', timestamp: new Date().toISOString() });
       }
       inventory = await getInventory(page);
@@ -513,6 +523,12 @@ async function captureVisit(browser, playwrightDevices, config, task, outputDir)
     if (task.journey) expectations.push(...(task.journey.expectedEvents ?? []).map(item => expectation(item, task.journey.kind === 'invalid-validation' ? null : task.journey.id)));
     expectations.push(...syntheticExpectations(config, visit.effectiveConsentState, task.device));
     rejectConflictingExclusions(expectations);
+    const tagRules = [...(config.expectedTagRequests ?? []), ...(task.expectedTagRequests ?? task.journey?.expectedTagRequests ?? []), ...stepTagRequests];
+    const tagResults = analyzeTagRequests(requests, { rules: tagRules, device: task.device, consentState: visit.effectiveConsentState,
+      captureComplete: !visit.networkCaptureTruncated && !visit.findings.some(f => ['REQUEST_CAPTURE_ERROR', 'CONSENT_STATE_UNTESTED', 'FRAME_INVENTORY_INCOMPLETE', 'NAVIGATION_WRITE_BLOCKED', 'POPUP_FLOW_UNSUPPORTED'].includes(f.code)) });
+    visit.tagRequestChecks = tagResults.checks;
+    visit.tagRequestContractsConfigured = tagResults.checks.some(check => !['untested', 'not-applicable'].includes(check.status));
+    visit.findings.push(...tagResults.findings);
     visit.eventContractsConfigured = expectations.length > 0;
     visit.expectationSignature = contractSignature(config, task, expectations);
     visit.findings.push(...analyzeTagEvents(parsed.events ?? [], { expectations, duplicateWindowMs: config.duplicateWindowMs ?? 2000, knownDestinations: config.knownDestinations ?? {} }).map(entry => entry.rule?.syntheticExclusion && entry.code === 'unexpected_event_count' ? normalizeFinding({ ...entry, code: 'SYNTHETIC_CONVERSION_EMITTED', title: 'A production conversion was emitted during a QA visit', suggestion: 'Inspect the configured synthetic exclusion at this production destination. Browser emission does not prove a counted conversion.' }) : normalizeFinding(entry)));
@@ -526,7 +542,7 @@ async function captureVisit(browser, playwrightDevices, config, task, outputDir)
     }
     if (!expectations.length) visit.findings.push(finding('EVENT_EXPECTATIONS_UNCONFIGURED', 'info', 'Required event counts are not configured for this visit', 'Define expected events and destinations from the measurement plan before treating missing-tag checks as complete.'));
     visit.dataLayerTimelineComplete = !visit.findings.some(f => f.code === 'DATALAYER_HOOK_REPLACED');
-    visit.status = visit.findings.some(f => ['CONSENT_STATE_UNTESTED', 'FORM_SUCCESS_UNVERIFIED', 'FORM_INVALID_INPUT_UNVERIFIED', 'INVALID_TEST_WRITE_INTERCEPTED', 'FRAME_INVENTORY_INCOMPLETE', 'REQUEST_CAPTURE_ERROR', 'REQUEST_CAPTURE_LIMIT', 'NAVIGATION_WRITE_BLOCKED', 'POPUP_FLOW_UNSUPPORTED'].includes(f.code)) ? 'partial' : 'completed';
+    visit.status = visit.findings.some(f => ['CONSENT_STATE_UNTESTED', 'FORM_SUCCESS_UNVERIFIED', 'FORM_INVALID_INPUT_UNVERIFIED', 'INVALID_TEST_WRITE_INTERCEPTED', 'FRAME_INVENTORY_INCOMPLETE', 'REQUEST_CAPTURE_ERROR', 'REQUEST_CAPTURE_LIMIT', 'NAVIGATION_WRITE_BLOCKED', 'POPUP_FLOW_UNSUPPORTED', 'TAG_REQUEST_CAPTURE_INCOMPLETE'].includes(f.code)) ? 'partial' : 'completed';
   } catch (error) {
     visit.status = 'failed';
     visit.findings.push(finding('BROWSER_JOURNEY_FAILED', 'high', `${task.type === 'journey' ? 'Form journey' : 'Page visit'} could not finish`,
@@ -632,7 +648,7 @@ async function main() {
   const report = { schemaVersion: '1.2', runId, startedAt: new Date().toISOString(), mode: args.allowSubmit ? 'submission-enabled' : args.allowInvalid ? 'invalid-validation-enabled' : 'read-only',
     site: config.site ?? new URL(pages[0].url).hostname, traffic: { category: 'synthetic-qa', runMarkerId: config.qaRunId, productionCounting: 'untested' }, status: 'running', executionComplete: false, finishedAt: null, configPath,
     coverage: { pageVisitsPlanned: pages.length * devices.length * consentStates.length, pageVisitsCompleted: 0, journeysPlanned: journeys.length, journeysTested: 0,
-      journeysSkipped: 0, limitations: ['Browser requests prove an attempted dispatch, not vendor ingestion or server-side delivery.', 'Actual backend receipt, CRM records, and browser/server deduplication require separate authenticated checks.', 'Consent controls are clicked where configured; legal compliance and manager state are not certified.', 'An absent configured expectation is reported as untested, not as a pass.', 'All runner visits are synthetic QA. Storage marking needs site integration; browser emission checks do not verify production counting.', 'Agent policy probes alter only user-agent identity claims; authenticated agent access requires separately correlated source evidence.', 'dataLayerTimelineComplete=false marks incomplete dataLayer history; network and inspected-form checks can still complete.'] },
+      journeysSkipped: 0, limitations: ['Browser requests prove an attempted dispatch, not vendor ingestion or server-side delivery.', 'Actual backend receipt, CRM records, and browser/server deduplication require separate authenticated checks.', 'Consent controls are clicked where configured; legal compliance and manager state are not certified.', 'An absent configured expectation is reported as untested, not as a pass.', 'All runner visits are synthetic QA. Storage marking needs site integration; browser emission checks do not verify production counting.', 'Configured generic tag checks verify request matches and counts, not decoded event semantics or vendor receipt.', 'Agent policy probes alter only user-agent identity claims; authenticated agent access requires separately correlated source evidence.', 'dataLayerTimelineComplete=false marks incomplete dataLayer history; network and inspected-form checks can still complete.'] },
     visits: [], journeys: [], findings: [] };
   const tasks = [];
   for (const [index, entry] of pages.entries()) for (const device of devices) for (const consentState of consentStates) {

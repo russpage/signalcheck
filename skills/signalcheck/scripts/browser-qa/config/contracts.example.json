@@ -6,6 +6,7 @@
     {
       "url": "https://replace-with-your-domain.example/contact",
       "label": "Contact",
+      "expectedTagRequests": [{"id": "other-tool-pageview", "host": "replace-with-observed-collector.example", "path": "/replace-with-observed-path", "method": "GET", "query": {"event": "replace-with-observed-public-event"}, "count": 1}],
       "expectedForms": [{"id": "contact", "selector": "form#contact", "requiredFields": ["input[type=email]"], "requireLabels": true}],
       "assertions": [{"selector": "button[type=submit]", "visible": true, "enabled": true, "accessibleName": "Send"}],
       "expectedEvents": [{"vendor": "ga4", "destinationId": "G-REPLACE", "eventName": "generate_lead", "count": 0}],

@@ -19,6 +19,7 @@ Use a bounded critical-path suite daily and broader discovery periodically. This
 | Journeys | Configured non-destructive click, URL or selector checkpoints; SPA transitions | Bundled; arbitrary multi-step form/payment workflows remain unsupported |
 | Navigation | Critical links, redirects, query preservation and external handoffs | Browser; exhaustive broken-link/redirect audit planned |
 | Tags | Installed supported containers/scripts and observed requests | Bundled; script presence does not prove event emission |
+| Tags | Configured collector/script requests for TikTok, Snapchat or any other reviewed endpoint | Bundled generic host/path/method/query/action/consent/count checks; no universal payload decoder, new write authorization or platform-receipt proof |
 | Tags | Container export review: trigger overlap, variables, consent settings and redundant installations | Browser/Access or supplied export; no GTM administration connector bundled |
 | Events | Sanitized dataLayer timeline and frame inventory | Bundled where hooks remain observable; workers/replaced hooks can limit this evidence |
 | Events | Parse GA4 batches/Measurement Protocol, Meta pixel/CAPI captures, Google Ads conversion variants | Bundled adapters; only captured traffic is observable, no server transport generated |

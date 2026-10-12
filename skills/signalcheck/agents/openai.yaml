@@ -1,4 +1,4 @@
 interface:
   display_name: "SignalCheck"
-  short_description: "Find broken forms and tracking mistakes"
-  default_prompt: "Use $signalcheck to check my website’s most important form, investigate any problems with the tools I have connected and check fixes against the same test."
+  short_description: "Check your website’s tags and events"
+  default_prompt: "Use $signalcheck to discover my website’s tracking tools, ask what else should be checked, test tags and events for the actions I care about, investigate failures and check fixes against the original tests."

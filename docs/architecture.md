@@ -11,6 +11,7 @@ The package separates portable instructions from executable browser tests. An as
 | Browser runner | Fresh Chromium contexts, inventory, network capture, bounded assertions/journeys and sanitized artifacts | No checkout/destructive executor; default page visits still send normal analytics traffic |
 | Traffic checks | Synthetic visit metadata, reviewed exact-origin storage marking, zero-emission production rules and agent user-agent probes | Storage needs site integration; probes do not authenticate agents or prove final counting |
 | Traffic evidence importer | Normalize supplied identity/access/counting assertions into private typed findings | Authorized host evidence, one unit/window/source, unknowns preserved; no live collection, signature verification or browser-verifier certification |
+| Generic tag request checks | Exact collector/path/query/method and browser action/consent/count checks for other tools | Raw request evidence only; no arbitrary payload decoder, final receipt proof or new write permission |
 | Protocol adapters | Decode logical GA4/Meta/Google Ads events and classify duplicates | Captured traffic only; first-party hosts require explicit mapping |
 | Platform knowledge | Explain Shopify pixel sandboxes, SPAs, external forms and provider constraints | Guidance, not a claim that platform-specific backend connectors are installed |
 | Optional receipt observers | Correlate application, CRM, queue, tagging-server and vendor processing records | Extension point; no backend connectors shipped |

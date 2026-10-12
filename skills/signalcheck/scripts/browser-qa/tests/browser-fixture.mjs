@@ -18,6 +18,9 @@ await listen(embedded);
 const embedUrl = `http://127.0.0.1:${embedded.address().port}`;
 let repaired = false;
 const server = http.createServer((request, response) => {
+  if (request.url.startsWith('/custom-sdk.js')) { response.setHeader('Content-Type', 'application/javascript'); response.end('window.customSDKLoaded=true'); return; }
+  if (request.url.startsWith('/custom-events')) { response.writeHead(204); response.end(); return; }
+  if (request.url.startsWith('/custom-error')) { response.writeHead(503); response.end(); return; }
   if (request.url.startsWith('/g/collect')) { response.writeHead(204); response.end(); return; }
   if (request.url.startsWith('/api/leads')) { receivedLeads++; response.writeHead(200); response.end('accepted'); return; }
   response.setHeader('Content-Type', 'text/html');
@@ -28,10 +31,12 @@ const server = http.createServer((request, response) => {
     <form id="bypassed" novalidate><input type="email" required><button type="submit">Bypass native</button></form>
     <form id="button-bypassed"><input type="email" required><button type="submit" formnovalidate>Bypass button</button></form>
     <form id="broken" action="/api/leads" method="POST" ${repaired ? '' : 'novalidate'}><input id="broken-email" type="email" required><button type="submit">Send broken</button></form>
-    <script>
+    <script src="/custom-sdk.js"></script><script>
+      fetch('/custom-events?event=page-view&email=private@example.com');
+      fetch('/custom-error');
       function emit(event){return fetch('/g/collect?v=2&tid=G-FIXTURE&en='+event+'&cid=private-client');}
       emit('page_view');
-      document.querySelector('#spa').onclick=()=>{history.pushState({},'', '/details');document.querySelector('#details').hidden=false;emit('page_view');};
+      document.querySelector('#spa').onclick=()=>{history.pushState({},'', '/details');document.querySelector('#details').hidden=false;emit('page_view');fetch('/custom-events?event=details-view&email=private@example.com');};
       document.querySelector('#bypassed').onsubmit=e=>e.preventDefault();
       document.querySelector('#button-bypassed').onsubmit=e=>e.preventDefault();
       document.querySelector('#broken').onsubmit=e=>{e.preventDefault();emit('generate_lead');fetch('/api/leads',{method:'POST',body:'private@example.com'}).catch(()=>{});};
@@ -42,7 +47,7 @@ await listen(server);
 const url = `http://127.0.0.1:${server.address().port}/?email=private@example.com&token=private-secret&phone=8015551234`;
 const event = {vendor:'ga4',destinationId:'G-FIXTURE',eventName:'generate_lead',count:0};
 const config = {
-  pages: [{url, label:'private-person private@example.com private-secret', expectedForms:[{selector:'#validating',requiredFields:['#email'],requireLabels:true},{selector:'#external',frameSelector:'#embed',requireLabels:true}], assertions:[{selector:'#spa',visible:true,enabled:true,accessibleName:'Open details'}], expectedEvents:[event,{vendor:'ga4',destinationId:'G-FIXTURE',eventName:'page_view',count:2}], steps:[{id:'details',type:'click',selector:'#spa',nonDestructive:true,settleMs:500,expectedEvents:[{vendor:'ga4',destinationId:'G-FIXTURE',eventName:'page_view',count:1}]}]}],
+  pages: [{url, expectedTagRequests:[{id:'custom-sdk',host:new URL(url).host,path:'/custom-sdk.js',resourceTypes:['script'],count:1},{id:'custom-pageview',host:new URL(url).host,path:'/custom-events',query:{event:'page-view'},count:1},{id:'custom-error',host:new URL(url).host,path:'/custom-error',count:1},{id:'custom-missing',host:new URL(url).host,path:'/never-fired',count:1}], label:'private-person private@example.com private-secret', expectedForms:[{selector:'#validating',requiredFields:['#email'],requireLabels:true},{selector:'#external',frameSelector:'#embed',requireLabels:true}], assertions:[{selector:'#spa',visible:true,enabled:true,accessibleName:'Open details'}], expectedEvents:[event,{vendor:'ga4',destinationId:'G-FIXTURE',eventName:'page_view',count:2}], steps:[{id:'details',type:'click',selector:'#spa',nonDestructive:true,settleMs:500,expectedTagRequests:[{id:'custom-details',host:new URL(url).host,path:'/custom-events',query:{event:'details-view'},count:1}],expectedEvents:[{vendor:'ga4',destinationId:'G-FIXTURE',eventName:'page_view',count:1}]}]}],
   devices:['desktop'],consentStates:['unset'],settleMs:500,networkIdleTimeoutMs:500,screenshotDevices:[],collectorHosts:{'127.0.0.1':'ga4'},
   journeys:[{id:'bypass-invalid',kind:'invalid-validation',url,enabled:true,formSelector:'#bypassed',fields:[],expectedEvents:[event],settleMs:500},{id:'button-bypass-invalid',kind:'invalid-validation',url,enabled:true,formSelector:'#button-bypassed',fields:[],expectedEvents:[event],settleMs:500},{id:'native-invalid',kind:'invalid-validation',url,enabled:true,formSelector:'#validating',fields:[{selector:'#email',value:''}],expectedEvents:[event],settleMs:500},{id:'broken-invalid',kind:'invalid-validation',url,enabled:true,formSelector:'#broken',fields:[{selector:'#broken-email',value:''}],expectedEvents:[event],settleMs:500}]
 };
@@ -60,6 +65,13 @@ try {
   assert.equal(report.visits.length,5);
   assert.equal(receivedLeads,0,'No invalid form write should reach the fixture backend');
   const page=report.visits.find(v=>v.type==='page');
+  assert.equal(page.tagRequestChecks.find(c=>c.id==='custom-sdk').status,'verified-browser-request');
+  assert.equal(page.tagRequestChecks.find(c=>c.id==='custom-pageview').status,'verified-browser-request');
+  assert.equal(page.tagRequestChecks.find(c=>c.id==='custom-details').actual,1);
+  assert.equal(page.tagRequestChecks.find(c=>c.id==='custom-details').status,'verified-browser-request');
+  assert.ok(page.findings.some(f=>f.code==='TAG_REQUEST_DELIVERY_FAILED'));
+  assert.ok(page.findings.some(f=>f.code==='TAG_REQUEST_MISSING'));
+  assert.ok(page.tagRequestChecks.every(c=>c.vendorReceipt==='untested'));
   assert.equal(page.assertions.filter(a=>a.status==='verified').length,3);
   assert.ok(page.forms.some(f=>f.id==='external' && f.frameIndex>0),'Cross-origin iframe form must be inspected');
   assert.equal(page.events.filter(e=>e.eventName==='page_view').length,2,'SPA page view should be observed');
@@ -94,7 +106,7 @@ try {
   assert.equal(result.status,'verified-browser-scope',JSON.stringify(result.verificationResult));
   assert.equal(result.verificationResult.downstreamReceipt,'untested');
   assert.equal(receivedLeads,0,'Repair verification must not deliver synthetic leads');
-  console.log('Browser fixture passed: 10 visits, SPA events, iframe forms, invalid validation, write interception, unwanted conversion, redaction and verified repair.');
+  console.log('Browser fixture passed: 10 visits, generic SDK/action/request checks, missing/error endpoints, SPA events, iframe forms, invalid validation, write interception, unwanted conversion, redaction and verified repair.');
 } finally {
   await Promise.all([new Promise(resolve=>server.close(resolve)),new Promise(resolve=>embedded.close(resolve))]);
   await fs.rm(directory,{recursive:true,force:true});
