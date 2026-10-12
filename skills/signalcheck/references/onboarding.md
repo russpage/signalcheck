@@ -43,6 +43,10 @@ Connect extra tools only when the first result shows why they are useful. For ex
 
 ## 6. Finish with continuity
 
+Select relevant [audit modules](audit-modules.md) around the chosen journey; explain why any added platform evidence matters. Offer a readable fix queue with owners, impact and the original-test retest. Do not require the person to choose fifteen technical audits or connect every platform before the first result.
+
+When recurring work is requested, let the person choose cadence, local time, timezone and delivery destination. Use the host's scheduling controls, preserve the returned task identifier privately, and show the confirmed schedule and how to edit or pause it. Reuse prior choices and any existing task; avoid duplicate schedules. Follow [scheduling.md](scheduling.md). Do not call a scheduled review healthy until an actual unattended run and its delivery are verified.
+
 Summarize: “You chose quote requests. These checks ran. This evidence supports this result. This stage remains untested. Here is the next action.” Save the reviewed site profile and private action ledger in the user's project. Offer recurring monitoring when requested or clearly part of the task; verify the actual scheduler and reporting route before saying it is enabled.
 
 Give returning users a short change review: new journeys, changed intent, new permissions or failed tests. Preserve their decisions; do not restart onboarding each run. Measure improvement by verified repairs and closed coverage gaps. A pleasant setup is a design aim, not a proven psychological outcome.

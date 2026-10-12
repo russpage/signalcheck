@@ -6,7 +6,7 @@ const hash = value => createHash('sha256').update(JSON.stringify(value)).digest(
 const modes = ['investigate', 'prepare-fixes', 'maintain'];
 const gapCodes = /UNCONFIGURED|UNTESTED|UNVERIFIED|INCOMPLETE|UNSUPPORTED|CAPTURE|RUNNER_FAILED|DATALAYER_HOOK|SCREENSHOT|BROWSER_JOURNEY_FAILED/;
 const severityRank = { critical: 0, high: 1, error: 1, medium: 2, warning: 2, low: 3, info: 4 };
-const incompleteCapture = /CAPTURE|CONSENT_STATE_UNTESTED|FRAME_INVENTORY_INCOMPLETE|DATALAYER_HOOK_REPLACED|POPUP_FLOW_UNSUPPORTED|BROWSER_JOURNEY_FAILED/;
+const incompleteCapture = /CAPTURE|CONSENT_STATE_UNTESTED|FRAME_INVENTORY_INCOMPLETE|DATALAYER_HOOK_REPLACED|COMMERCE_CAPTURE_INCOMPLETE|POPUP_FLOW_UNSUPPORTED|BROWSER_JOURNEY_FAILED/;
 
 export function scopeOf(entry, report) {
   const visit = list(report.visits).find(v => v.id === entry.visitId);
@@ -65,7 +65,7 @@ export function buildActionPlan(report, { mode = 'investigate', capabilities = [
       causeConfidence: old?.causeConfidence ?? 'unknown',
       status: old && old.status !== 'verified-browser-scope' ? old.status : 'needs-investigation',
       baseline: old?.baseline ?? { runId: report.runId, startedAt: report.startedAt, scope, regressionScopes,
-        captureAdequate: report.executionComplete === true && report.status !== 'failed' && list(report.visits).some(v => scopeKey(scopeOf(v, report)) === scopeKey(scope) && v.status === 'completed' && !v.networkCaptureTruncated && v.dataLayerTimelineComplete !== false && !list(v.findings).some(f => incompleteCapture.test(String(f.code)))),
+        captureAdequate: report.executionComplete === true && report.status !== 'failed' && list(report.visits).some(v => scopeKey(scopeOf(v, report)) === scopeKey(scope) && v.status === 'completed' && !v.networkCaptureTruncated && !v.dataLayerCaptureTruncated && v.dataLayerTimelineComplete !== false && !list(v.findings).some(f => incompleteCapture.test(String(f.code)))),
         findingScopeKeys: list(report.findings).filter(actionable)
           .filter(f => regressionScopes.some(scope => scopeKey(scopeOf(f, report)) === scopeKey(scope)))
           .map(f => scopedFindingKey(f, report)) },
@@ -138,7 +138,7 @@ export function verifyAction(plan, id, report) {
     const matching = list(report.visits).filter(v => scopeKey(scopeOf(v, report)) === scopeKey(scope));
     if (!scope.expectationSignature || !matching.length || matching.some(v => v.status !== 'completed')) {
       blockers.push('An original or regression scope is missing, incomplete or has a changed contract.');
-    } else if (matching.some(v => v.networkCaptureTruncated || v.dataLayerTimelineComplete === false || list(v.findings).some(f => incompleteCapture.test(String(f.code))))) {
+    } else if (matching.some(v => v.networkCaptureTruncated || v.dataLayerCaptureTruncated || v.dataLayerTimelineComplete === false || list(v.findings).some(f => incompleteCapture.test(String(f.code))))) {
       blockers.push('Capture is inadequate in an original or regression scope.');
     }
   }

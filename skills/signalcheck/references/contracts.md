@@ -43,6 +43,14 @@ The engine's configuration supports explicit route/device/consent matrices, dest
 - A journey with `kind: "invalid-validation"` requires `--allow-invalid` and explicitly configured count-zero `expectedEvents`. It checks native rejection or `validationSelector`, with backend write interception. Report an intercepted write as an observed attempt and attribute it to the form only with endpoint/action evidence; unrelated background writes can make validation inconclusive. Interception does not prove client validation prevented the attempt. The guard permits recognized measurement requests so premature conversion emission can still be observed.
 - Backend receipt, arbitrary payload schemas, cookie-level consent validation, geo simulation, attribution and cleanup require additional observers or a separate authorized browser/API run. A field describing the desired outcome does not implement an observer.
 
+### Ecommerce shape contracts
+
+`expectedCommerce` is a global/page/journey array of reviewed dataLayer requirements. Use `config/commerce.example.json`. Each rule needs a unique safe `id`, `eventName`, and at least one of `minItems` (0–200), `requireValue`, `requireCurrency`, `requireTransactionId`, `requireItemIdentifier`, `requireItemPrice` or `requireItemQuantity`. Optional `actionId` matches the actual recorded action ID; `devices`/`consentStates` narrow applicability. No step-level commerce keys or arbitrary JSON schemas are executable. Global and local rule IDs must be distinct.
+
+The observer recognizes object-style `event`/`ecommerce` and gtag-style event parameters. It retains only booleans and item counts for the new shape fields. Values/prices must be finite and nonnegative; quantity must be positive; currency uses a three-uppercase-letter format; identifier accepts a nonempty item ID or name. These are shape checks, not catalog identity, ISO currency validation, total reconciliation, destination routing or request-payload checks. A zero value is permitted. Final snapshots can repeat entries; `observedEntries` is not a logical event count or duplicate metric.
+
+Rules apply to the bounded observed dataLayer; match an action ID when timing is material. An unavailable/replaced/truncated timeline or unresolved consent/frame/action capture makes shape checks inconclusive. `verified-data-layer-shape` establishes only the configured shape in observed entries. Dispatch and platform receipt require their own checks. Add commerce requirements to original repair verification; never weaken them to pass a retest.
+
 ## Receipt checkpoints
 
 | Checkpoint | Evidence | Maximum supported conclusion |

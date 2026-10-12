@@ -71,6 +71,26 @@ node bin/report.mjs /absolute/path/qa/current/report.json
 
 On Linux CI use `npx playwright install --with-deps chromium` when required. `--help` shows the supported flags. The default run does not fill or submit forms. Page loads can generate genuine analytics traffic, so use a test environment or documented synthetic exclusions. Invalid-input checks require `--allow-invalid`; successful submissions require `--allow-submit` plus QA routing and outcome contracts. Start from `config/contracts.example.json` to configure those disabled journey templates. Purchases and destructive transactions are not executed.
 
+## Choose the audits that matter
+
+SignalCheck includes fifteen guided audit workflows: GTM, GA4, Google Ads, Meta Pixel/CAPI, consent, campaign identifiers, duplicate events, conversion deduplication, offline imports, enhanced conversions readiness, server-side tagging feasibility, attribution windows, ecommerce data and iOS signal reviews, plus a weekly readout.
+
+Your agent chooses relevant checks around the customer action you care about. The dashboard shows what needs fixing, the next action, the owner and how to check the repair. Missing evidence stays visible. Platform/server audits need the appropriate connected tools or private exports; the package supplies workflows and a review compiler, not automatic access to those systems.
+
+```sh
+npm run audits -- --input /private/site/audits.json --output /private/site/review
+# Include an actual browser run when available:
+npm run audits -- --input /private/site/audits.json --output /private/site/review --report /private/site/current/report.json
+```
+
+Start from `skills/signalcheck/scripts/browser-qa/config/audits.example.json`. The generated HTML/Markdown dashboard includes all fifteen coverage rows and the agent's sanitized review notes. Imported reviews remain supplied assertions; they do not independently prove platform receipt or close verified repairs. See [audit workflows](skills/signalcheck/references/audit-modules.md).
+
+For ecommerce, `expectedCommerce` checks configured dataLayer fields: items, value, currency, transaction identity and item identifier/price/quantity. Use `config/commerce.example.json` in the runner. Shape checks do not establish product correctness, event dispatch or counted sales. Purchase/checkout execution remains unsupported by the bundled runner.
+
+## Review changes on your schedule
+
+Ask your agent to review your site at your chosen cadence, local time and timezone, and choose where the results should appear. Change the time, pause or resume through the host's scheduler. The skill guides setup and the recurring work; your host supplies scheduling and delivery. A created schedule and a successfully completed unattended check are reported separately. See [scheduling](skills/signalcheck/references/scheduling.md).
+
 ## Check test traffic and agent access
 
 Ask:

@@ -1,7 +1,7 @@
 {
   "name": "signalcheck",
-  "version": "0.5.0",
-  "description": "Check your website\u2019s tags and events: GTM, GA4, Meta, Google Ads, TikTok, Snapchat and other tools. Find tracking problems, investigate them and check fixes.",
+  "version": "0.6.0",
+  "description": "Check your website\u2019s tags and events: GTM, GA4, Meta, Google Ads, TikTok, Snapchat and other tools. See what needs fixing and review changes on your schedule.",
   "author": "Russ Page (https://github.com/russpage)",
   "license": "MIT",
   "private": true,
@@ -18,6 +18,7 @@
     "report": "node skills/signalcheck/scripts/browser-qa/bin/report.mjs",
     "actions": "node skills/signalcheck/scripts/browser-qa/bin/actions.mjs",
     "updates": "node skills/signalcheck/scripts/browser-qa/bin/updates.mjs",
-    "traffic": "node skills/signalcheck/scripts/browser-qa/bin/traffic.mjs"
+    "traffic": "node skills/signalcheck/scripts/browser-qa/bin/traffic.mjs",
+    "audits": "node skills/signalcheck/scripts/browser-qa/bin/audits.mjs"
   }
 }

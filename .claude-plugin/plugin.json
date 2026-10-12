@@ -1,5 +1,5 @@
 {
   "name": "signalcheck",
-  "version": "0.5.0",
-  "description": "Check your website\u2019s tags and events: GTM, GA4, Meta, Google Ads, TikTok, Snapchat and other tools. Find tracking problems, investigate them and check fixes."
+  "version": "0.6.0",
+  "description": "Check your website\u2019s tags and events: GTM, GA4, Meta, Google Ads, TikTok, Snapchat and other tools. See what needs fixing and review changes on your schedule."
 }
