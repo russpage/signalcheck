@@ -9,6 +9,7 @@ import { consoleCategory, expectedFormResult, invalidValidationResult, backendWr
 import { validateTrafficConfig, syntheticExpectations, rejectConflictingExclusions, installSyntheticMarker, QA_STORAGE_KEY, agentAccessResult } from '../lib/traffic.mjs';
 
 import { validateTagRequests, analyzeTagRequests } from '../lib/tag-requests.mjs';
+import { commerceShape, validateCommerceRules, analyzeCommerce } from '../lib/commerce.mjs';
 
 const TAG_URL = /googletagmanager|google-analytics|analytics\.google|googleadservices|doubleclick|facebook\.(?:com|net)|connect\.facebook|klaviyo|tiktok|hotjar|clarity\.ms|segment\.(?:io|com)|customer(?:\.io|io)|adroll|pinterest|bing\.com|linkedin|snapchat|attentivemobile|yotpo/i;
 const PII_KEY = /(?:email|phone|mobile_number|first.?name|last.?name|full.?name|address|password|passwd|secret|token|authorization|cookie|user_id|customer_id|visitor_id|client_id|session_id|gclid|fbclid|msclkid|ttclid|_fbp|_fbc|transaction_id|order_id)/i;
@@ -93,6 +94,7 @@ function safeDataLayer(payload) {
     currency: typeof commerce.currency === 'string' && /^[A-Z]{3}$/.test(commerce.currency) ? commerce.currency : null,
     value: Number.isFinite(Number(commerce.value)) && commerce.value !== null && commerce.value !== '' ? Number(commerce.value) : null,
     itemCount: Array.isArray(commerce.items) ? commerce.items.length : null,
+    commerceShape: commerceShape(commerce),
     transactionHash: commerce.transaction_id ? hash(String(commerce.transaction_id)) : null,
     hasUserData: Boolean(parameters?.user_data || parameters?.user_properties || parameters?.user_id),
   };
@@ -151,7 +153,9 @@ function validateConfig(config) {
   }
   validateTrafficConfig(config, allowedOrigins);
   validateTagRequests(config.expectedTagRequests);
+  validateCommerceRules(config.expectedCommerce);
   for (const entry of [...pages, ...journeys]) {
+    validateCommerceRules([...(config.expectedCommerce ?? []), ...(entry.expectedCommerce ?? [])]);
     validateTagRequests([...(config.expectedTagRequests ?? []), ...(entry.expectedTagRequests ?? []), ...(entry.steps ?? []).flatMap(step => step.expectedTagRequests ?? [])]);
     for (const step of entry.steps ?? []) validateTagRequests(step.expectedTagRequests);
   }
@@ -314,6 +318,7 @@ async function captureVisit(browser, playwrightDevices, config, task, outputDir)
     await installSyntheticMarker(context, config.traffic, config.qaRunId, task.id);
     await context.exposeBinding('__websiteQAPush', (source, payload) => {
       if (dataLayerEntries.length < 500) dataLayerEntries.push({ timestamp: new Date().toISOString(), actionId, frameUrl: safeUrl(source.frame?.url() ?? ''), value: safeDataLayer(payload) });
+      else visit.dataLayerCaptureTruncated = true;
     });
     await context.addInitScript(() => {
       const layer = window.dataLayer = window.dataLayer || [];
@@ -541,8 +546,13 @@ async function captureVisit(browser, playwrightDevices, config, task, outputDir)
       visit.findings.push(finding('TAG_REQUEST_FAILED', 'medium', 'A tracking request failed in this browser run', 'Check the failed endpoint and repeat the test; determine whether browser blocking, consent, or vendor availability caused it.', { confidence: 0.9, evidence: [failure.url, failure.error] }));
     }
     if (!expectations.length) visit.findings.push(finding('EVENT_EXPECTATIONS_UNCONFIGURED', 'info', 'Required event counts are not configured for this visit', 'Define expected events and destinations from the measurement plan before treating missing-tag checks as complete.'));
-    visit.dataLayerTimelineComplete = !visit.findings.some(f => f.code === 'DATALAYER_HOOK_REPLACED');
-    visit.status = visit.findings.some(f => ['CONSENT_STATE_UNTESTED', 'FORM_SUCCESS_UNVERIFIED', 'FORM_INVALID_INPUT_UNVERIFIED', 'INVALID_TEST_WRITE_INTERCEPTED', 'FRAME_INVENTORY_INCOMPLETE', 'REQUEST_CAPTURE_ERROR', 'REQUEST_CAPTURE_LIMIT', 'NAVIGATION_WRITE_BLOCKED', 'POPUP_FLOW_UNSUPPORTED', 'TAG_REQUEST_CAPTURE_INCOMPLETE'].includes(f.code)) ? 'partial' : 'completed';
+    if (visit.dataLayerCaptureTruncated) visit.findings.push(finding('DATALAYER_CAPTURE_LIMIT', 'low', 'dataLayer history reached its bounded capture limit', 'Shorten the visit or split the journey and repeat the original check. The observed timeline is incomplete.', { actual: 500 }));
+    visit.dataLayerTimelineComplete = !visit.dataLayerCaptureTruncated && !visit.findings.some(f => f.code === 'DATALAYER_HOOK_REPLACED');
+    const commerce = analyzeCommerce(visit.dataLayer, { rules: [...(config.expectedCommerce ?? []), ...(task.expectedCommerce ?? task.journey?.expectedCommerce ?? [])], device: task.device, consentState: visit.effectiveConsentState,
+      captureComplete: visit.dataLayerTimelineComplete && !visit.dataLayerCaptureTruncated && !visit.findings.some(f => ['CONSENT_STATE_UNTESTED','FRAME_INVENTORY_INCOMPLETE','NAVIGATION_WRITE_BLOCKED','POPUP_FLOW_UNSUPPORTED'].includes(f.code)) });
+    visit.commerceChecks = commerce.checks;
+    visit.findings.push(...commerce.findings);
+    visit.status = visit.findings.some(f => ['CONSENT_STATE_UNTESTED', 'FORM_SUCCESS_UNVERIFIED', 'FORM_INVALID_INPUT_UNVERIFIED', 'INVALID_TEST_WRITE_INTERCEPTED', 'FRAME_INVENTORY_INCOMPLETE', 'REQUEST_CAPTURE_ERROR', 'REQUEST_CAPTURE_LIMIT', 'NAVIGATION_WRITE_BLOCKED', 'POPUP_FLOW_UNSUPPORTED', 'TAG_REQUEST_CAPTURE_INCOMPLETE', 'COMMERCE_CAPTURE_INCOMPLETE'].includes(f.code)) ? 'partial' : 'completed';
   } catch (error) {
     visit.status = 'failed';
     visit.findings.push(finding('BROWSER_JOURNEY_FAILED', 'high', `${task.type === 'journey' ? 'Form journey' : 'Page visit'} could not finish`,

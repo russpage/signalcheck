@@ -1,0 +1,32 @@
+{
+  "site": "example.com",
+  "allowedOrigins": [
+    "https://example.com"
+  ],
+  "pages": [
+    {
+      "url": "https://example.com/products/example",
+      "label": "Product",
+      "expectedCommerce": [
+        {
+          "id": "product-data",
+          "eventName": "view_item",
+          "minItems": 1,
+          "requireValue": true,
+          "requireCurrency": true,
+          "requireItemIdentifier": true,
+          "requireItemPrice": true,
+          "requireItemQuantity": true
+        }
+      ]
+    }
+  ],
+  "devices": [
+    "desktop"
+  ],
+  "consentStates": [
+    "unset"
+  ],
+  "screenshotDevices": [],
+  "journeys": []
+}

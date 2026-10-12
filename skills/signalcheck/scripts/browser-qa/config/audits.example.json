@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "site": "https://example.com",
+  "selected": [
+    "ga4-quality",
+    "duplicate-events",
+    "ecommerce-data",
+    "weekly-readout"
+  ],
+  "reviews": [
+    {
+      "moduleId": "ecommerce-data",
+      "status": "untested",
+      "scope": "Product view, desktop, configured consent state",
+      "summary": "Product data checks have not run yet.",
+      "businessImpact": "Product reporting quality is unknown.",
+      "nextAction": "Confirm intended item fields and run the configured browser check.",
+      "owner": "Site owner",
+      "retest": "Repeat the same product action and expectedCommerce contract.",
+      "confidence": "unknown",
+      "severity": "info",
+      "evidence": [],
+      "expected": "The product event carries the reviewed item, value and currency fields.",
+      "observed": "No runtime capture yet.",
+      "causeConfidence": "unknown",
+      "pageUrl": "https://example.com/products/example"
+    }
+  ]
+}

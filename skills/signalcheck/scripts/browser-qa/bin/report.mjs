@@ -44,12 +44,38 @@ function contractBanner(report) {
   return `Event contracts configured for ${coverage.configured}/${coverage.observed} observed visit(s); ${coverage.unconfigured} visit(s) remain untested for event counts. Configured checks cover their specified events and destinations.`;
 }
 
+function auditMarkdown(review) {
+  if (!review) return [];
+  const lines = ['', '## Audit coverage and next actions', '', review.verification, '', '| Audit | Review status | Missing evidence | Next action |', '| --- | --- | --- | --- |'];
+  for (const m of list(review.modules)) lines.push(`| ${clean(m.title)} | ${clean(m.status)} | ${clean(list(m.missingEvidence).join(', '))} | ${clean(m.nextAction)} |`);
+  for (const m of list(review.modules).filter(m => m.summary).toSorted((a,b)=>(rank[a.severity]??4)-(rank[b.severity]??4))) lines.push('', `### ${clean(m.title)}`, '', `${clean(m.summary)} (${clean(m.status)}; confidence ${clean(m.confidence)})`, '', `Expected: ${clean(m.expected)}. Observed: ${clean(m.observed)}`, '', `Affected page: ${clean(m.pageUrl ?? 'not supplied')}`, '', `Scope: ${clean(m.scope)}. Impact: ${clean(m.businessImpact)}`, '', `Owner: ${clean(m.owner)}. Next action: ${clean(m.nextAction)}`, '', `Retest: ${clean(m.retest)}`);
+  return lines;
+}
+
+function auditHtml(review) {
+  if (!review) return '';
+  const rows = list(review.modules).map(m => `<tr><td>${escape(m.title)}</td><td>${escape(m.status)}</td><td>${escape(list(m.missingEvidence).join(', '))}</td><td>${escape(m.nextAction)}</td></tr>`).join('');
+  const notes = list(review.modules).filter(m => m.summary).toSorted((a,b)=>(rank[a.severity]??4)-(rank[b.severity]??4)).map(m => `<article><div class="severity">${escape(m.severity)} · ${escape(m.status)} · observation confidence ${escape(m.confidence)} · cause confidence ${escape(m.causeConfidence)}</div><h2>${escape(m.title)}</h2><p>${escape(m.summary)}</p><p>Expected: ${escape(m.expected)}</p><p>Observed: ${escape(m.observed)}</p><p>Affected page: ${escape(m.pageUrl ?? 'not supplied')}</p><p>Scope: ${escape(m.scope)}</p><p>Impact: ${escape(m.businessImpact)}</p><p>Owner: ${escape(m.owner)}. Next action: ${escape(m.nextAction)}</p><p>Retest: ${escape(m.retest)}</p><details><summary>Review evidence</summary><pre>${escape(JSON.stringify(m.evidence,null,2))}</pre></details></article>`).join('');
+  return `<h2>Audit coverage and next actions</h2><p>${escape(review.verification)}</p><div class="table"><table><thead><tr><th>Audit</th><th>Review status</th><th>Missing evidence</th><th>Next action</th></tr></thead><tbody>${rows}</tbody></table></div><div class="cards">${notes}</div>`;
+}
+
+function commerceMarkdown(report) {
+  const checks = list(report.visits).flatMap(v => list(v.commerceChecks).map(c => ({...c,visitId:v.id})));
+  return !checks.length ? [] : ['', '## Ecommerce dataLayer shape', '', 'Shape checks do not prove event dispatch, product correctness or platform receipt.', '', '| Check | Visit | Result | Fields needing attention |', '| --- | --- | --- | --- |', ...checks.map(c => `| ${clean(c.id)} | ${clean(c.visitId)} | ${clean(c.status)} | ${clean(list(c.defects).join(', '))} |`)];
+}
+
+function commerceHtml(report) {
+  const rows = list(report.visits).flatMap(v => list(v.commerceChecks).map(c => `<tr><td>${escape(c.id)}</td><td>${escape(v.id)}</td><td>${escape(c.status)}</td><td>${escape(list(c.defects).join(', '))}</td></tr>`)).join('');
+  return rows ? `<h2>Ecommerce dataLayer shape</h2><p>Shape checks do not prove event dispatch, product correctness or platform receipt.</p><div class="table"><table><thead><tr><th>Check</th><th>Visit</th><th>Result</th><th>Fields needing attention</th></tr></thead><tbody>${rows}</tbody></table></div>` : '';
+}
+
 export function renderMarkdown(report) {
   report = safeReportValue(report);
   const coverage = report.coverage ?? {};
   const findings = list(report.findings).toSorted((a,b)=>(rank[a.severity]??4)-(rank[b.severity]??4));
   const lines = [
     '# SignalCheck website QA', '',
+    `Site: ${clean(report.auditReview?.site ?? report.site ?? 'unspecified')}`, '',
     `Run: ${clean(report.runId)} · ${clean(report.startedAt)} · ${clean(report.status)}`,
     '',
     `Page visits completed: ${coverage.pageVisitsCompleted ?? 0}/${coverage.pageVisitsPlanned ?? 0}. Submission journeys tested: ${coverage.journeysTested ?? 0}/${coverage.journeysPlanned ?? 0}.`,
@@ -67,15 +93,16 @@ export function renderMarkdown(report) {
     '| --- | --- | --- | --- |',
   ];
   for (const f of findings) lines.push(`| ${clean(f.severity)} | ${clean(f.title ?? f.message ?? f.code)} | ${clean(f.url ?? f.pageUrl)} ${clean(f.device)} ${clean(f.consentState)} | ${clean(f.suggestion ?? f.suggestedFix ?? list(f.recommendations).join(' '))} |`);
-  if (!findings.length) lines.push('| Info | No findings in observed scope | See coverage limitations | This is not verification of untested form submissions. |');
+  if (!findings.length) lines.push('| Info | No browser findings supplied | See audit observations and coverage | Untested checks remain unverified. |');
   const requestChecks = list(report.visits).flatMap(visit => list(visit.tagRequestChecks).map(check => ({ ...check, visitId: visit.id })));
   if (requestChecks.length) lines.push('', '## Tracking request checks', '', '| Check | Visit | Result | Expected requests | Observed requests |', '| --- | --- | --- | --- | --- |', ...requestChecks.map(check => `| ${clean(check.id)} | ${clean(check.visitId)} | ${clean(check.status)} | ${clean(typeof check.expected === 'object' ? JSON.stringify(check.expected) : check.expected)} | ${clean(check.actual)} |`), '', 'These are browser request checks; decoded events and final platform receipt are separate.');
+  lines.push(...commerceMarkdown(report), ...auditMarkdown(report.auditReview));
   lines.push('', '## Coverage limitations', '');
   for (const limitation of list(coverage.limitations)) lines.push(`- ${clean(limitation)}`);
   for (const j of list(report.journeys).filter(j=>['skipped','untested','partial','failed'].includes(j.status))) lines.push(`- ${clean(j.id)}: ${clean(j.reason ?? j.blockedReason ?? 'Not tested.')}`);
   const newFindings = list(report.history?.newFindings);
   const resolved = list(report.history?.resolvedFindings);
-  lines.push('', `Compared with previous run: ${newFindings.length} new finding(s), ${resolved.length} no longer observed. Changed/failed coverage can affect these comparisons.`, '');
+  lines.push('', report.history?.hasBaseline === true ? `Compared with previous browser run: ${newFindings.length} new finding(s), ${resolved.length} no longer observed. Changed/failed coverage can affect these comparisons.` : 'Comparison unavailable: no prior browser baseline is recorded. Module review comparisons require separate matched evidence.', '');
   return lines.join('\n');
 }
 
@@ -84,24 +111,24 @@ export function renderHtml(report) {
   const findings = list(report.findings).toSorted((a,b)=>(rank[a.severity]??4)-(rank[b.severity]??4));
   const coverage = report.coverage ?? {};
   const plan = buildActionPlan(report);
-  const queue = `<h2>Fix queue</h2><p>Investigate with connected tools, prepare a reviewable change, then rerun the original checks. Establish tool access and authorization in your agent.</p>${plan.actions.map(a=>`<article><div class="severity">${escape(a.severity)} · ${escape(a.status)}</div><h2>${escape(a.title)}</h2><p>${escape(a.nextAction)}</p><p>${escape(a.suggestion)}</p><details><summary>Agent handoff and verification</summary><pre>${escape(JSON.stringify({id:a.id,scope:a.scope,requiredCapabilities:a.requiredCapabilities,verification:a.verification},null,2))}</pre></details></article>`).join('') || '<p>No actionable findings in the observed scope. Untested checks still require configuration.</p>'}`;
+  const queue = `<h2>Fix queue</h2><p>Investigate with connected tools, prepare a reviewable change, then rerun the original checks. Establish tool access and authorization in your agent.</p>${plan.actions.map(a=>`<article><div class="severity">${escape(a.severity)} · ${escape(a.status)}</div><h2>${escape(a.title)}</h2><p>${escape(a.nextAction)}</p><p>${escape(a.suggestion)}</p><details><summary>Agent handoff and verification</summary><pre>${escape(JSON.stringify({id:a.id,scope:a.scope,requiredCapabilities:a.requiredCapabilities,verification:a.verification},null,2))}</pre></details></article>`).join('') || '<p>No browser repair actions supplied. Review audit next actions and untested coverage.</p>'}`;
   const cards = findings.map(f=>`<article><div class="severity">${escape(f.severity)}</div><h2>${escape(f.title??f.message??f.code)}</h2><p>${escape(f.url??f.pageUrl)} ${escape(f.device)} ${escape(f.consentState)}</p><p>${escape(f.suggestion??f.suggestedFix??list(f.recommendations).join(' '))}</p><details><summary>Evidence and confidence</summary><pre>${escape(JSON.stringify({expected:f.expected,actual:f.actual,confidence:f.confidence,cause:f.cause??f.likelyCause,evidence:f.evidence},null,2))}</pre></details></article>`).join('');
   const tagRows = list(report.visits).flatMap(visit => list(visit.tagRequestChecks).map(check => `<tr><td>${escape(check.id)}</td><td>${escape(visit.id)}</td><td>${escape(check.status)}</td><td>${escape(typeof check.expected === 'object' ? JSON.stringify(check.expected) : check.expected)}</td><td>${escape(check.actual)}</td></tr>`)).join('');
   const tagTable = tagRows ? `<h2>Tracking request checks</h2><p>Decoded events and final platform receipt are separate.</p><div class="table"><table><thead><tr><th>Check</th><th>Visit</th><th>Result</th><th>Expected requests</th><th>Observed requests</th></tr></thead><tbody>${tagRows}</tbody></table></div>` : '';
   const rows = list(report.visits).map(v=>`<tr><td>${escape(v.label??v.url)}</td><td>${escape(v.device)}</td><td>${escape(v.consentState)}</td><td>${escape(v.status)}</td><td>${escape(v.traffic?.execution ?? 'unrecorded')} · ${escape(v.traffic?.marker ?? 'unrecorded')}${v.agentAccess ? ` · ${escape(v.agentAccess.status)} (authenticated agent untested)` : ''}</td><td>${list(v.forms).length}</td><td>${list(v.events).length}</td></tr>`).join('');
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SignalCheck website QA</title><style>body{font:16px system-ui,sans-serif;background:#f5f5f1;color:#202421;margin:0}main{max-width:1050px;margin:auto;padding:32px}h1{font-size:34px;margin-bottom:8px}h2{font-size:20px}.meta{color:#59645c}.coverage{background:#fff3d7;padding:18px;border-left:5px solid #b67a16;margin:24px 0}.cards{display:grid;gap:14px}article{background:white;border:1px solid #d5ddd5;border-radius:10px;padding:20px}.severity{text-transform:uppercase;font-size:12px;letter-spacing:.08em;font-weight:700;color:#8c3923}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}table{border-collapse:collapse;background:white;width:100%;margin-top:20px}td,th{text-align:left;padding:10px;border-bottom:1px solid #ddd}.table{overflow:auto}li{margin:8px 0}</style></head><body><main><h1>SignalCheck website QA</h1><p class="meta">${escape(report.startedAt)} · ${escape(report.status)} · ${escape(report.runId)}</p><div class="coverage"><p><strong>${escape(contractBanner(report))}</strong></p><p>${escape(tagRequestBanner(report))}</p><strong>${coverage.pageVisitsCompleted??0}/${coverage.pageVisitsPlanned??0} page visits. ${coverage.journeysTested??0}/${coverage.journeysPlanned??0} submission journeys tested.</strong><p>Browser emission is observed. CRM receipt, server-side delivery and final conversion counting require separate evidence. Skipped submissions are untested.</p><p>All runner visits are synthetic QA. Storage marking does not prove production exclusion. Agent policy probes do not authenticate an agent.</p></div>${queue}${tagTable}<h2>Observed findings</h2><div class="cards">${cards||'<article>No findings in observed scope. Check coverage before interpreting this result.</article>'}</div><h2>Coverage limitations</h2><ul>${list(coverage.limitations).map(x=>`<li>${escape(x)}</li>`).join('')}${list(report.journeys).filter(x=>['skipped','untested','partial','failed'].includes(x.status)).map(x=>`<li>${escape(x.id)}: ${escape(x.reason??x.blockedReason??'Not tested')}</li>`).join('')}</ul><h2>Observed visits</h2><div class="table"><table><thead><tr><th>Page</th><th>Device</th><th>Consent</th><th>Status</th><th>Traffic check</th><th>Forms found</th><th>Events observed</th></tr></thead><tbody>${rows}</tbody></table></div></main></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SignalCheck website QA</title><style>body{font:16px system-ui,sans-serif;background:#f5f5f1;color:#202421;margin:0}main{max-width:1050px;margin:auto;padding:32px}h1{font-size:34px;margin-bottom:8px}h2{font-size:20px}.meta{color:#59645c}.coverage{background:#fff3d7;padding:18px;border-left:5px solid #b67a16;margin:24px 0}.cards{display:grid;gap:14px}article{background:white;border:1px solid #d5ddd5;border-radius:10px;padding:20px}.severity{text-transform:uppercase;font-size:12px;letter-spacing:.08em;font-weight:700;color:#8c3923}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}table{border-collapse:collapse;background:white;width:100%;margin-top:20px}td,th{text-align:left;padding:10px;border-bottom:1px solid #ddd}.table{overflow:auto}li{margin:8px 0}</style></head><body><main><h1>SignalCheck website QA</h1><p class="meta">Site: ${escape(report.auditReview?.site ?? report.site ?? "unspecified")}</p><p class="meta">${escape(report.startedAt)} · ${escape(report.status)} · ${escape(report.runId)}</p><div class="coverage"><p><strong>${escape(contractBanner(report))}</strong></p><p>${escape(tagRequestBanner(report))}</p><strong>${coverage.pageVisitsCompleted??0}/${coverage.pageVisitsPlanned??0} page visits. ${coverage.journeysTested??0}/${coverage.journeysPlanned??0} submission journeys tested.</strong><p>Browser evidence covers only captured actions and requests. CRM receipt, server-side delivery and final conversion counting require separate evidence. Skipped submissions are untested.</p><p>All runner visits are synthetic QA. Storage marking does not prove production exclusion. Agent policy probes do not authenticate an agent.</p></div>${queue}${tagTable}${commerceHtml(report)}${auditHtml(report.auditReview)}<h2>Browser findings</h2><div class="cards">${cards||'<article>No browser findings supplied. Review audit observations and coverage before interpreting this result.</article>'}</div><h2>Coverage limitations</h2><ul>${list(coverage.limitations).map(x=>`<li>${escape(x)}</li>`).join('')}${list(report.journeys).filter(x=>['skipped','untested','partial','failed'].includes(x.status)).map(x=>`<li>${escape(x.id)}: ${escape(x.reason??x.blockedReason??'Not tested')}</li>`).join('')}</ul><h2>Observed visits</h2><div class="table"><table><thead><tr><th>Page</th><th>Device</th><th>Consent</th><th>Status</th><th>Traffic check</th><th>Forms found</th><th>Events observed</th></tr></thead><tbody>${rows}</tbody></table></div></main></body></html>`;
 }
 
 export function renderDigest(report) {
   return safeReportValue({
     runId: report.runId, startedAt: report.startedAt, finishedAt: report.finishedAt,
     status: report.status, executionComplete: report.executionComplete,
-    coverage: report.coverage, traffic: report.traffic, summary: report.summary, journeys: report.journeys,
+    coverage: report.coverage, traffic: report.traffic, summary: report.summary, journeys: report.journeys, auditReview: report.auditReview,
     findings: report.findings, history: report.history,
     visits: list(report.visits).map(v => ({
       id: v.id, url: v.url, device: v.device, consentState: v.consentState,
       traffic: v.traffic, agentAccess: v.agentAccess, effectiveConsentState: v.effectiveConsentState, status: v.status, dataLayerTimelineComplete:v.dataLayerTimelineComplete,
-      tagRequestChecks: v.tagRequestChecks, formsFound: list(v.forms).length, containers: v.containers,
+      tagRequestChecks: v.tagRequestChecks, commerceChecks: v.commerceChecks, dataLayerCaptureTruncated: v.dataLayerCaptureTruncated, formsFound: list(v.forms).length, containers: v.containers,
       events: list(v.events).map(e => ({vendor:e.vendor,destinationId:e.destinationId,eventName:e.eventName,channel:e.channel,httpStatus:e.httpStatus,actionId:e.actionId,consentState:e.consentState})),
       consoleErrors: v.consoleErrors, requestFailures: v.requestFailures,
     })),

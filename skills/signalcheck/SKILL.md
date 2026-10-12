@@ -1,6 +1,6 @@
 ---
 name: signalcheck
-description: "Check website tags and events across GTM, GA4, Meta, Google Ads, TikTok, Snapchat and other tracking tools. Use to investigate tags that do not fire, missing or repeated events, wrong destinations, consent behavior and tracking changes. Discover the installed tools and ask which others should be included; help investigate and check fixes against the original tests. Also cover forms, test traffic, human/bot/agent evidence, recurring checks and update feedback. Separate installed scripts, browser requests, decoded events and confirmed platform receipt; report untested tools and stages."
+description: "Check website tags and events across GTM, GA4, Meta, Google Ads, TikTok, Snapchat and other tools. Find missing or repeated events, wrong destinations and incomplete shopping data. Guide audits of consent, campaign tracking, server events, offline conversions and attribution using available evidence. Show what to fix, what needs investigation and what remains untested. Discover the intended tools and customer actions, check fixes against the original tests, and help set a recurring review at the user's chosen time. Also cover forms and human, bot, agent and test traffic."
 ---
 
 # SignalCheck
@@ -22,6 +22,8 @@ Read [onboarding.md](references/onboarding.md) for first setup or a new site. St
 Read [tags-and-events.md](references/tags-and-events.md) for any tag/event audit, GTM check or additional tracking tool. Discover the actual stack, then ask which other tools should be included. Reuse known expectations. Treat page views, content views, clicks and reviewed customer actions as tracking opportunities; forms are one part of this scope. Keep a coverage row for every discovered or expected tool and distinguish installed scripts, browser requests, decoded events and confirmed platform receipt. Use bundled GA4/Meta/Google Ads decoders and reviewed generic request contracts for other tools; do not imply universal event decoding or count script loading as an event pass.
 
 ## Start with the site and intended behavior
+
+Read [audit-modules.md](references/audit-modules.md) when selecting or expanding an audit, reviewing platform/server evidence or producing a recurring dashboard. Choose modules around the user's priority action and available evidence; retain all selected coverage gaps. Fifteen workflows share inputs, diagnostic rules, outputs, guardrails, ownership and retests. The included audit compiler formats host-supplied reviews; it does not independently audit platforms or verify imported conclusions.
 
 1. Identify the base URL, bounded critical routes, forms/embedded providers, intended analytics destinations and important conversion actions. Use sitemaps and source to discover candidates, then inspect dynamic content in the browser. Keep discovered and verified inventories separate.
 2. Read [contracts.md](references/contracts.md) to define expected event names, destinations, counts, required parameters, consent conditions and form outcomes. Do not adopt today's implementation as the correct baseline automatically. Treat unknown expectations as untested.
@@ -78,6 +80,8 @@ Generate the fix queue with `node bin/report.mjs REPORT_JSON` or the runner's `b
 Use investigate, prepare-fixes or maintain according to the user's authorized scope. Maintain needs an explicit policy; its label does not grant authority. Missing access blocks the affected operation, not unrelated useful work. Extend the regression suite for shared-code changes; preserve a rollback plan. The host performs connector operations; the bundled CLI records and verifies work rather than executing connector writes.
 
 ## Produce a useful report and recurring run
+
+Include the relevant audit coverage, owner, business impact, confidence, next action and unchanged retest. Read [scheduling.md](references/scheduling.md) for user-controlled cadence, local time, timezone, delivery, edit and pause/resume. Record an actual scheduler result; distinguish schedule created from a verified unattended run.
 
 Lead with the most consequential confirmed defect. Include:
 
