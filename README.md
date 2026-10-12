@@ -1,8 +1,10 @@
 # SignalCheck
 
-Check the form. Investigate the failure. Retest the fix.
+Check your tags. Find the problem. Check the fix.
 
-SignalCheck helps your AI agent find broken forms and tracking mistakes on your website. Start with something a customer should be able to do: request a quote, join your email list or submit a contact form. Decide what should happen, then check what actually happens.
+SignalCheck helps your AI agent check your website’s tags and events: GTM, GA4, Meta, Google Ads, TikTok, Snapchat and other tracking tools. Check whether tracking fires for the right actions, goes to the intended destination, or fires more often than expected.
+
+Start with the tools you use and the actions you want to measure: a page view, product view, button click or form submission. Your agent discovers what is installed, asks which other tools should be included, and helps you decide what should happen. Forms are one part of that tracking check.
 
 When a check fails, SignalCheck gives your agent the evidence to investigate. Your agent can use the tools you have connected to prepare a fix. SignalCheck then checks the repair against the same test. Changing the test or skipping a failed step does not count as a verified fix.
 
@@ -37,6 +39,16 @@ Restart or reload your agent's skill discovery if required. Ask:
 Claude Code also exposes `/signalcheck`; Codex can explicitly invoke `$signalcheck`. See [platform support and official sources](docs/platforms.md) for exact installation locations, Gemini CLI support, Claude uploads, OpenAI plugin distribution and Microsoft Copilot limitations.
 
 Installing a skill does not create a browser, network access, service credentials or a scheduled job. The host must provide a supported browser or a shell/CI runtime that can run the included Playwright engine. Microsoft 365 Copilot's restricted skill sandbox cannot directly run this live Node/Chromium scanner; offline report review and an external authorized execution service are separate paths.
+
+## Tracking coverage
+
+| Tool | What SignalCheck can check | What needs further evidence |
+| --- | --- | --- |
+| GTM | Container loading, configured tag requests and agent-guided trigger review | A loaded container does not prove its tags fired |
+| GA4, Meta, Google Ads | Decoded events, intended destinations, missing/repeated firing and configured consent/action conditions | Final platform receipt and conversion counting |
+| TikTok, Snapchat and other tools | Configured tracking-request counts and failures, plus script discovery where supported | Event payload meaning when no decoder exists, and final platform receipt |
+
+During setup, your agent shows the tools it discovered and asks what else belongs in the check. Keep a result for every expected tool, including anything untested. Other tools use `expectedTagRequests` rules; these check matching browser requests, not every vendor's event format. See `skills/signalcheck/references/tags-and-events.md` for the contract and evidence limits.
 
 ## Start a scan
 

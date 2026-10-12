@@ -1,7 +1,7 @@
 {
   "name": "signalcheck",
-  "version": "0.4.0",
-  "description": "Find broken forms and tracking mistakes. Help your agent investigate what went wrong and check each fix against the original test.",
+  "version": "0.5.0",
+  "description": "Check your website\u2019s tags and events: GTM, GA4, Meta, Google Ads, TikTok, Snapchat and other tools. Find tracking problems, investigate them and check fixes.",
   "author": "Russ Page (https://github.com/russpage)",
   "license": "MIT",
   "private": true,

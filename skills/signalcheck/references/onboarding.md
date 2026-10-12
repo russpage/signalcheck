@@ -4,7 +4,7 @@ Use this flow for first setup, adding a site or expanding coverage. Treat it as 
 
 ## 1. Make the outcome concrete
 
-Ask: “Which customer action would hurt most if it stopped working?” Offer a few relevant choices discovered from the site: request a quote, book an appointment, buy a product or join the newsletter. Explain the immediate deliverable: check that action and show the evidence, next fix or remaining gap. Accept an existing priority without asking again.
+Ask: “Which customer action would hurt most if it stopped working?” Offer relevant choices discovered from the site: track page/product views, a key button click, request a quote, book an appointment, buy a product or join the newsletter. Explain which actions need an authorized test environment. Explain the immediate deliverable: check that action and show the evidence, next fix or remaining gap. Accept an existing priority without asking again.
 
 Ask for the website URL if absent. Reuse known configuration. Do not request GTM IDs, selectors, vendor accounts or a complete measurement plan before discovery. Explain that page loads may create synthetic analytics traffic and use existing test/exclusion arrangements when available.
 
@@ -19,6 +19,7 @@ Return a short, concrete preview: “I found a quote form, a Google Analytics de
 Ask about business decisions the agent cannot infer safely:
 
 - What counts as success: a click, an accepted form or a persisted CRM lead?
+- Which tracking tools should be included? Show the discovered stack first: GTM, GA4, Meta, Google Ads, TikTok, Snapchat or other observed tools. Ask what is missing and retain previous answers. Separate a tool discovered on the site from one the user intends to use; do not make them configure selectors or collector URLs.
 - Which intended destinations should receive which events? Explain any ambiguity using plain language and actual observations. Offer a draft for correction, never silently adopt the live implementation as correct.
 - What is legitimate repetition: two destinations, two different actions or a repeated submission?
 - For submissions: where should the QA lead go, and which follow-up must be suppressed?
