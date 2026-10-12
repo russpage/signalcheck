@@ -66,7 +66,7 @@ try {
   assert.equal(receivedLeads,0,'No invalid form write should reach the fixture backend');
   const page=report.visits.find(v=>v.type==='page');
   assert.equal(page.tagRequestChecks.find(c=>c.id==='custom-sdk').status,'verified-browser-request');
-  assert.equal(page.tagRequestChecks.find(c=>c.id==='custom-pageview').status,'verified-browser-request');
+  assert.equal(page.tagRequestChecks.find(c=>c.id==='custom-pageview').status,'verified-browser-request',JSON.stringify({checks:page.tagRequestChecks,findings:page.findings.filter(f=>f.rule?.id==='custom-pageview')}));
   assert.equal(page.tagRequestChecks.find(c=>c.id==='custom-details').actual,1);
   assert.equal(page.tagRequestChecks.find(c=>c.id==='custom-details').status,'verified-browser-request');
   assert.ok(page.findings.some(f=>f.code==='TAG_REQUEST_DELIVERY_FAILED'));
